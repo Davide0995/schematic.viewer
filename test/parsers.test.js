@@ -5,6 +5,13 @@ import { parseNBT } from '../src/nbt.js';
 import { parseSchematic } from '../src/schematic.js';
 import { parseLitematic } from '../src/litematic.js';
 import { resolveTextureAlias } from '../src/texture-manager.js';
+import {
+  blockStateProperties,
+  parseResourcePackJson,
+  resolveBlockModel,
+  resolveModel,
+  selectBlockState,
+} from '../src/resource-pack.js';
 
 function bytes(...values) {
   return new Uint8Array(values);
@@ -242,4 +249,45 @@ test('resolves missing block textures to recognizable material aliases', () => {
   assert.equal(resolveTextureAlias('mud_bricks'), 'bricks');
   assert.equal(resolveTextureAlias('spruce_leaves'), 'oak_leaves');
   assert.equal(resolveTextureAlias('unknown_block'), 'stone');
+});
+
+test('selects resource-pack blockstate variants by block properties', () => {
+  const blockstates = new Map([['minecraft:test_block', {
+    variants: {
+      'facing=north': { model: 'minecraft:block/north' },
+      'facing=east': { model: 'minecraft:block/east', y: 90 },
+      '': { model: 'minecraft:block/default' },
+    },
+  }]]);
+
+  assert.deepEqual(blockStateProperties('minecraft:test_block[facing=east]'), { facing: 'east' });
+  assert.deepEqual(selectBlockState('minecraft:test_block[facing=east]', blockstates), [
+    { model: 'minecraft:block/east', y: 90 },
+  ]);
+});
+
+test('resolves resource-pack model parents and texture references', () => {
+  const models = new Map([
+    ['minecraft:block/cube', { elements: [{ from: [0, 0, 0], to: [16, 16, 16] }], textures: { all: 'minecraft:block/stone' } }],
+    ['minecraft:block/child', { parent: 'minecraft:block/cube', textures: { base: 'minecraft:block/stone', all: '#base' } }],
+  ]);
+
+  const model = resolveModel('minecraft:block/child', models);
+
+  assert.equal(model.elements.length, 1);
+  assert.equal(model.textures.all, 'minecraft:block/stone');
+});
+
+test('parses blockstates and models from resource-pack paths', () => {
+  const files = {
+    'assets/minecraft/blockstates/stone.json': new TextEncoder().encode('{"variants":{"":{"model":"minecraft:block/stone"}}}'),
+    'assets/minecraft/models/block/stone.json': new TextEncoder().encode('{"textures":{"all":"minecraft:block/stone"},"elements":[{"from":[0,0,0],"to":[16,16,16],"faces":{"up":{"texture":"#all"}}}]}'),
+  };
+  const parsed = parseResourcePackJson(files);
+  const model = resolveBlockModel('minecraft:stone', parsed.blockstates, parsed.models);
+
+  assert.ok(parsed.blockstates.has('minecraft:stone'));
+  assert.ok(parsed.models.has('minecraft:block/stone'));
+  assert.equal(model.textures.all, 'minecraft:block/stone');
+  assert.equal(model.elements[0].faces.up.texture, 'minecraft:block/stone');
 });

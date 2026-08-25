@@ -40,6 +40,42 @@ const FACES = [
 
 // Indices for a quad (2 triangles, CCW)
 const QUAD_INDICES = [0,1,2, 0,2,3];
+const MODEL_FACES = {
+  up: FACES[0], down: FACES[1], north: FACES[2], south: FACES[3], east: FACES[4], west: FACES[5],
+};
+
+function rotateModelPoint(point, origin, axis, angle) {
+  const radians = angle * Math.PI / 180;
+  const sin = Math.sin(radians), cos = Math.cos(radians);
+  const x = point[0] - origin[0], y = point[1] - origin[1], z = point[2] - origin[2];
+  if (axis === 'x') return [x + origin[0], y * cos - z * sin + origin[1], y * sin + z * cos + origin[2]];
+  if (axis === 'y') return [x * cos + z * sin + origin[0], y + origin[1], -x * sin + z * cos + origin[2]];
+  return [x * cos - y * sin + origin[0], x * sin + y * cos + origin[1], z + origin[2]];
+}
+
+function modelPoint(point, elementRotation, variantRotation) {
+  let result = point;
+  if (elementRotation) {
+    result = rotateModelPoint(result, elementRotation.origin ?? [8, 8, 8], elementRotation.axis, elementRotation.angle ?? 0);
+  }
+  result = rotateModelPoint(result, [8, 8, 8], 'y', variantRotation.y ?? 0);
+  result = rotateModelPoint(result, [8, 8, 8], 'x', variantRotation.x ?? 0);
+  return result.map(value => value / 16);
+}
+
+function modelNormal(normal, elementRotation, variantRotation) {
+  const origin = modelPoint([8, 8, 8], elementRotation, variantRotation);
+  const endpoint = modelPoint([
+    8 + normal[0], 8 + normal[1], 8 + normal[2],
+  ], elementRotation, variantRotation);
+  const length = Math.hypot(endpoint[0] - origin[0], endpoint[1] - origin[1], endpoint[2] - origin[2]) || 1;
+  return endpoint.map((value, index) => (value - origin[index]) / length);
+}
+
+function modelFaceUvs(face) {
+  const [u0, v0, u1, v1] = face.uv ?? [0, 0, 16, 16];
+  return [[u0 / 16, 1 - v1 / 16], [u1 / 16, 1 - v1 / 16], [u1 / 16, 1 - v0 / 16], [u0 / 16, 1 - v0 / 16]];
+}
 
 function blockIdx(x, y, z, w, l) { return x + z * w + y * w * l; }
 
@@ -191,6 +227,34 @@ export class SchematicRenderer {
       group.vertexCount += 4;
     };
 
+    const addModel = (model, bName, bx, by, bz) => {
+      for (const element of model.elements ?? []) {
+        const [x0, y0, z0] = element.from ?? [0, 0, 0];
+        const [x1, y1, z1] = element.to ?? [16, 16, 16];
+        for (const [faceName, face] of Object.entries(element.faces ?? {})) {
+          const template = MODEL_FACES[faceName];
+          if (!template || !face.texture) continue;
+          const verts = template.verts.map(([vx, vy, vz]) => modelPoint([
+            vx ? x1 : x0,
+            vy ? y1 : y0,
+            vz ? z1 : z0,
+          ], element.rotation, model.rotation));
+          const texture = face.texture.replace(/^#/, '').replace(/^minecraft:block\//, '');
+          const group = ensureGroup(texture, bName);
+          const base = group.vertexCount;
+          for (let vi = 0; vi < 4; vi++) {
+            const [vx, vy, vz] = verts[vi];
+            group.positions.push(bx + vx, by + vy, bz + vz);
+            group.normals.push(...modelNormal(template.dir, element.rotation, model.rotation));
+            group.uvs.push(...modelFaceUvs(face)[vi]);
+            group.colors.push(template.brightness, template.brightness, template.brightness);
+          }
+          for (const qi of QUAD_INDICES) group.indices.push(base + qi);
+          group.vertexCount += 4;
+        }
+      }
+    };
+
     for (let y = startY; y < sliceY; y++) {
       for (let z = 0; z < length; z++) {
         for (let x = 0; x < width; x++) {
@@ -200,6 +264,11 @@ export class SchematicRenderer {
           if (!isOpaque(bName) && bName.includes('air')) continue;
 
           const faceTextures = getBlockFaceTextures(bName);
+          const resourceModel = texMgr.getBlockModel?.(bName);
+          if (resourceModel?.elements?.length) {
+            addModel(resourceModel, bName, x, y, z);
+            continue;
+          }
           const boxes = getBlockBoxes(bName);
 
           if (boxes) {
