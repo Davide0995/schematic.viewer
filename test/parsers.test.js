@@ -166,6 +166,32 @@ test('decodes non-spanning litematic block states and properties', () => {
   assert.deepEqual([...result.blocks], [0, 1, 2, 1]);
 });
 
+test('unwraps metadata DataVersion values while decoding litematics', () => {
+  const palette = [
+    { Name: 'minecraft:air' },
+    { Name: 'minecraft:stone' },
+    { Name: 'minecraft:oak_planks' },
+  ];
+
+  const blockStates = blockStateLongs(0x000021); // entries: 1,2,0 with 4 bits each
+  const result = parseLitematic({
+    value: {
+      Metadata: { MinecraftDataVersion: { value: 3000 } },
+      Regions: {
+        Main: litematicRegion({
+          size: { x: 3, y: 1, z: 1 },
+          palette,
+          blockStates,
+        }),
+      },
+    },
+  });
+
+  assert.equal(result.palette[result.blocks[0]], 'minecraft:stone');
+  assert.equal(result.palette[result.blocks[1]], 'minecraft:oak_planks');
+  assert.equal(result.palette[result.blocks[2]], 'minecraft:air');
+});
+
 test('merges litematic regions with negative positions', () => {
   const palette = [{ Name: 'minecraft:air' }, { Name: 'minecraft:stone' }];
   const result = parseLitematic({

@@ -354,10 +354,8 @@ export class TextureManager {
     if (exact) {
       tex = this._buildFromBitmap(exact, this._raw.get(exact));
     } else if (!this._usingUserPack) {
-      const aliasName = resolveTextureAlias(shortName);
-      const aliasExact = textureCandidates(aliasName).find(candidate => this._raw.has(candidate));
-      if (aliasExact) tex = this._buildFromBitmap(aliasExact, this._raw.get(aliasExact));
-      else tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(blockNameToColor(texName))));
+      // For the bundled partial pack, avoid collapsing unknown textures to stone-like aliases.
+      tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(blockNameToColor(shortName))));
     } else {
       tex = nearestFilter(new THREE.CanvasTexture(missingTextureCanvas()));
     }
