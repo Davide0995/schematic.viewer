@@ -39,7 +39,7 @@ The included default pack is Pixel Perfection Legacy for Minecraft 26.2, a compl
 
 The viewer reads the litematic `MinecraftDataVersion` and the resource pack `pack.mcmeta`. Older schematic files continue to use their namespaced block IDs and states, while the UI reports when an older default pack may not contain newer block assets. For the closest result, load a pack matching the Minecraft version that created the schematic.
 
-GitHub Actions checks Mojang's official version manifest daily and ignores snapshots and pre-releases. When a new stable release appears, it opens one deduplicated maintenance issue so the pack and compatibility code can be reviewed.
+GitHub Actions checks Mojang's official version manifest every Monday at 00:00 UTC and ignores snapshots and pre-releases. When a new stable release appears, it opens one deduplicated maintenance issue so the pack and compatibility code can be reviewed. The currently supported release is tracked in [.github/minecraft-release.json](.github/minecraft-release.json).
 
 ## Default texture attribution
 
