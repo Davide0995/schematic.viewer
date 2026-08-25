@@ -5,6 +5,7 @@ import { parseNBT } from '../src/nbt.js';
 import { parseSchematic } from '../src/schematic.js';
 import { parseLitematic } from '../src/litematic.js';
 import { resolveTextureAlias } from '../src/texture-manager.js';
+import { sourceBlockIndexForFace } from '../src/hover.js';
 import {
   blockStateProperties,
   parseResourcePackJson,
@@ -71,6 +72,15 @@ function litematicRegion({ position = { x: 0, y: 0, z: 0 }, size, palette, block
     BlockStates: blockStates,
   };
 }
+
+test('maps both triangles of an emitted quad to its source block', () => {
+  const sourceIndices = [4, 19, 27];
+  assert.deepEqual(
+    [0, 1, 2, 3, 4, 5].map(faceIndex => sourceBlockIndexForFace(sourceIndices, faceIndex)),
+    [4, 4, 19, 19, 27, 27],
+  );
+  assert.equal(sourceBlockIndexForFace(sourceIndices, -1), undefined);
+});
 
 test('parses primitive NBT tags from an uncompressed compound', () => {
   const input = compoundRoot(
