@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { unzip } from 'fflate';
 import { blockNameToColor, getTextureTint } from './block-registry.js';
+import { parseResourcePackJson, resolveBlockModel } from './resource-pack.js';
 
 function nearestFilter(tex) {
   tex.magFilter = THREE.NearestFilter;
@@ -216,6 +217,8 @@ export class TextureManager {
   constructor() {
     this._cache = new Map(); // texName → THREE.Texture
     this._raw   = new Map(); // texName → ImageBitmap (from pack)
+    this._blockstates = new Map();
+    this._models = new Map();
     this._fallbacks = new Map(); // blockName → THREE.Texture
     this.loaded = false;
     this.ready = this.loadDefaultPack();
@@ -248,6 +251,10 @@ export class TextureManager {
           } catch {}
         });
 
+        const json = parseResourcePackJson(files);
+        for (const [key, value] of json.blockstates) this._blockstates.set(key, value);
+        for (const [key, value] of json.models) this._models.set(key, value);
+
         Promise.all(promises).then(() => {
           this.loaded = this._raw.size > 0;
           this._cache.clear();
@@ -264,9 +271,15 @@ export class TextureManager {
     await this.ready;
     for (const bitmap of this._raw.values()) bitmap.close?.();
     this._raw.clear();
+    this._blockstates.clear();
+    this._models.clear();
     for (const texture of this._cache.values()) texture.dispose();
     this._cache.clear();
     return this._readZip(bytes);
+  }
+
+  getBlockModel(blockName) {
+    return resolveBlockModel(blockName, this._blockstates, this._models);
   }
 
   _buildFromBitmap(texName, bitmap) {
