@@ -19,6 +19,7 @@
   "scripts": {
     "dev": "vite",
     "test": "node --test",
+    "generate:textures": "node scripts/generate-default-textures.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

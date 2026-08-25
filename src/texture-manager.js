@@ -75,26 +75,30 @@ export class TextureManager {
     this._raw   = new Map(); // texName → ImageBitmap (from pack)
     this._fallbacks = new Map(); // blockName → THREE.Texture
     this.loaded = false;
+    this.ready = this.loadDefaultPack();
   }
 
-  async loadFromZip(file) {
-    const buf = await file.arrayBuffer();
-    const bytes = new Uint8Array(buf);
+  async loadDefaultPack() {
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL}default-textures.zip`);
+      if (!response.ok) throw new Error(`Default texture pack request failed: ${response.status}`);
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      await this._readZip(bytes);
+    } catch (error) {
+      console.warn('Default texture pack unavailable; using color fallbacks.', error);
+    }
+  }
 
+  async _readZip(bytes) {
     return new Promise((resolve, reject) => {
       unzip(bytes, (err, files) => {
         if (err) { reject(err); return; }
 
         const blockTexPrefix = 'assets/minecraft/textures/block/';
         const entries = Object.entries(files).filter(([name]) =>
-          name.includes('/textures/block/') && name.endsWith('.png')
+          name.startsWith(blockTexPrefix) && name.endsWith('.png')
         );
-
         const promises = entries.map(async ([path, data]) => {
-          // Normalize path to just the texture name (without extension)
-          // handles: assets/minecraft/textures/block/stone.png → stone
-          // and other namespaces: assets/create/textures/block/... → skip for now
-          if (!path.startsWith(blockTexPrefix)) return;
           const texName = path.slice(blockTexPrefix.length).replace(/\.png$/, '');
           try {
             const bitmap = await blobToImageBitmap(new Blob([data], { type: 'image/png' }));
@@ -109,6 +113,14 @@ export class TextureManager {
         });
       });
     });
+  }
+
+  async loadFromZip(file) {
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+
+    await this.ready;
+    return this._readZip(bytes);
   }
 
   _buildFromBitmap(texName, bitmap) {
@@ -139,7 +151,7 @@ export class TextureManager {
     if (this._raw.has(texName)) {
       tex = this._buildFromBitmap(texName, this._raw.get(texName));
     } else {
-      tex = nearestFilter(new THREE.CanvasTexture(defaultTextureCanvas(texName, blockNameToColor(texName))));
+      tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(blockNameToColor(texName))));
     }
     this._cache.set(texName, tex);
     return tex;
@@ -149,7 +161,7 @@ export class TextureManager {
     const fallbackKey = `${blockName}:${texName}`;
     if (this._fallbacks.has(fallbackKey)) return this._fallbacks.get(fallbackKey);
     const color = blockNameToColor(blockName);
-    const tex = nearestFilter(new THREE.CanvasTexture(defaultTextureCanvas(texName, color)));
+    const tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(color)));
     this._fallbacks.set(fallbackKey, tex);
     return tex;
   }
