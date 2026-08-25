@@ -48,6 +48,21 @@ function colorCanvas(color, w=16, h=16) {
   return c;
 }
 
+function missingTextureCanvas(w = 16, h = 16) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  const halfW = Math.max(1, Math.floor(w / 2));
+  const halfH = Math.max(1, Math.floor(h / 2));
+  ctx.fillStyle = '#ff00ff';
+  ctx.fillRect(0, 0, halfW, halfH);
+  ctx.fillRect(halfW, halfH, w - halfW, h - halfH);
+  ctx.fillStyle = '#111111';
+  ctx.fillRect(halfW, 0, w - halfW, halfH);
+  ctx.fillRect(0, halfH, halfW, h - halfH);
+  return c;
+}
+
 const TEXTURE_ALIASES = {
   grass: 'grass_block_top',
   grass_block: 'grass_block_side',
@@ -222,7 +237,15 @@ function canonicalTextureId(texName) {
   let path = pathPart;
   if (path.startsWith('textures/')) path = path.slice('textures/'.length);
   if (path.startsWith('block/')) path = path.slice('block/'.length);
+  if (path.startsWith('blocks/')) path = path.slice('blocks/'.length);
   return `${namespacePart}:${path}`;
+}
+
+function textureCandidates(texName) {
+  const normalized = canonicalTextureId(texName);
+  const [namespace, path] = normalized.split(':', 2);
+  const prefixed = `${namespace}:block/${path}`;
+  return [...new Set([normalized, prefixed, `minecraft:${path}`, `minecraft:block/${path}`])];
 }
 
 export class TextureManager {
@@ -232,6 +255,7 @@ export class TextureManager {
     this._blockstates = new Map();
     this._models = new Map();
     this._fallbacks = new Map(); // blockName → THREE.Texture
+    this._usingUserPack = false;
     this.loaded = false;
     this.ready = this.loadDefaultPack();
   }
@@ -252,10 +276,10 @@ export class TextureManager {
         if (err) { reject(err); return; }
 
         const entries = Object.entries(files).filter(([name]) =>
-          /^assets\/[^/]+\/textures\/block\/.+\.png$/.test(name)
+          /^assets\/[^/]+\/textures\/(?:block|blocks)\/.+\.png$/i.test(name)
         );
         const promises = entries.map(async ([path, data]) => {
-          const match = path.match(/^assets\/([^/]+)\/textures\/block\/(.+)\.png$/);
+          const match = path.match(/^assets\/([^/]+)\/textures\/(?:block|blocks)\/(.+)\.png$/i);
           if (!match) return;
           const texName = `${match[1]}:${match[2]}`;
           try {
@@ -288,6 +312,7 @@ export class TextureManager {
     this._models.clear();
     for (const texture of this._cache.values()) texture.dispose();
     this._cache.clear();
+    this._usingUserPack = true;
     return this._readZip(bytes);
   }
 
@@ -320,18 +345,17 @@ export class TextureManager {
     if (this._cache.has(texName)) return this._cache.get(texName);
 
     let tex;
-    const normalizedName = canonicalTextureId(texName);
-    const [namespace, shortName] = normalizedName.split(':', 2);
-    const aliasName = resolveTextureAlias(shortName);
-    const resolvedName = this._raw.has(normalizedName)
-      ? normalizedName
-      : (this._raw.has(`${namespace}:${aliasName}`)
-        ? `${namespace}:${aliasName}`
-        : (this._raw.has(`minecraft:${aliasName}`) ? `minecraft:${aliasName}` : aliasName));
-    if (resolvedName && this._raw.has(resolvedName)) {
-      tex = this._buildFromBitmap(resolvedName, this._raw.get(resolvedName));
+    const [normalizedName, shortName] = [canonicalTextureId(texName), canonicalTextureId(texName).split(':')[1]];
+    const exact = textureCandidates(normalizedName).find(candidate => this._raw.has(candidate));
+    if (exact) {
+      tex = this._buildFromBitmap(exact, this._raw.get(exact));
+    } else if (!this._usingUserPack) {
+      const aliasName = resolveTextureAlias(shortName);
+      const aliasExact = textureCandidates(aliasName).find(candidate => this._raw.has(candidate));
+      if (aliasExact) tex = this._buildFromBitmap(aliasExact, this._raw.get(aliasExact));
+      else tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(blockNameToColor(texName))));
     } else {
-      tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(blockNameToColor(texName))));
+      tex = nearestFilter(new THREE.CanvasTexture(missingTextureCanvas()));
     }
     this._cache.set(texName, tex);
     return tex;
