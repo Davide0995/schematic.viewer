@@ -47,6 +47,77 @@ function colorCanvas(color, w=16, h=16) {
   return c;
 }
 
+const TEXTURE_ALIASES = {
+  grass: 'grass_block_top',
+  grass_block: 'grass_block_side',
+  grass_block_side: 'grass_block_side',
+  mycelium_top: 'grass_block_top',
+  mycelium_side: 'grass_block_side',
+  podzol_top: 'grass_block_top',
+  podzol_side: 'grass_block_side',
+  dirt_path_top: 'dirt_path_top',
+  dirt_path_side: 'dirt_path_side',
+  oak_planks: 'oak_planks',
+  crafting_table_top: 'oak_planks',
+  crafting_table_front: 'oak_planks',
+  crafting_table_side: 'oak_planks',
+  bookshelf: 'bookshelf',
+  chest_top: 'oak_planks',
+  chest_front: 'oak_planks',
+  chest_side: 'oak_planks',
+  chest_bottom: 'oak_planks',
+  ender_chest_top: 'obsidian',
+  ender_chest_front: 'obsidian',
+  ender_chest_side: 'obsidian',
+  ender_chest_bottom: 'obsidian',
+  stone_brick: 'stone_bricks',
+  stone_bricks: 'stone_bricks',
+  smooth_stone: 'stone',
+  deepslate: 'stone',
+  deepslate_top: 'stone',
+  polished_basalt: 'stone',
+  basalt: 'stone',
+  netherrack: 'stone',
+  sandstone: 'sandstone',
+  sandstone_top: 'sandstone_top',
+  sandstone_bottom: 'sandstone_bottom',
+  red_sandstone: 'sandstone',
+  red_sandstone_top: 'sandstone_top',
+  red_sandstone_bottom: 'sandstone_bottom',
+  quartz_block: 'stone',
+  quartz_block_top: 'stone',
+  quartz_block_side: 'stone',
+  quartz_block_bottom: 'stone',
+  furnace_front: 'furnace_front',
+  furnace_side: 'furnace_side',
+  furnace_top: 'furnace_top',
+  furnace_bottom: 'furnace_bottom',
+  blast_furnace_front: 'furnace_front',
+  blast_furnace_side: 'furnace_side',
+  blast_furnace_top: 'furnace_top',
+  smoker_front: 'furnace_front',
+  smoker_side: 'furnace_side',
+  smoker_top: 'furnace_top',
+  water: 'water_still',
+  lava: 'lava_still',
+  magma: 'lava_still',
+  packed_ice: 'ice',
+  blue_ice: 'ice',
+  sponge: 'sand',
+};
+
+export function resolveTextureAlias(texName) {
+  if (TEXTURE_ALIASES[texName]) return TEXTURE_ALIASES[texName];
+  const base = texName.replace(/_(top|side|bottom|front|back)$/, '');
+  if (TEXTURE_ALIASES[base]) return TEXTURE_ALIASES[base];
+  if (/(slab|stairs|fence|fence_gate|door|trapdoor)$/.test(base)) {
+    const material = base.match(/^(oak|spruce|birch|jungle|acacia|dark_oak)_/);
+    return material ? `${material[1]}_planks` : 'stone';
+  }
+  if (/(brick|terracotta|concrete|wool)$/.test(base)) return 'stone';
+  return null;
+}
+
 export class TextureManager {
   constructor() {
     this._cache = new Map(); // texName → THREE.Texture
@@ -129,8 +200,9 @@ export class TextureManager {
     if (this._cache.has(texName)) return this._cache.get(texName);
 
     let tex;
-    if (this._raw.has(texName)) {
-      tex = this._buildFromBitmap(texName, this._raw.get(texName));
+    const resolvedName = this._raw.has(texName) ? texName : resolveTextureAlias(texName);
+    if (resolvedName && this._raw.has(resolvedName)) {
+      tex = this._buildFromBitmap(resolvedName, this._raw.get(resolvedName));
     } else {
       tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(blockNameToColor(texName))));
     }
