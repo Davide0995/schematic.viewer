@@ -53,6 +53,17 @@ export class TextureManager {
     this._raw   = new Map(); // texName → ImageBitmap (from pack)
     this._fallbacks = new Map(); // blockName → THREE.Texture
     this.loaded = false;
+    this.ready = this.loadDefaultPack();
+  }
+
+  async loadDefaultPack() {
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL}default-textures.zip`);
+      if (!response.ok) throw new Error(`Default texture pack request failed: ${response.status}`);
+      await this._readZip(new Uint8Array(await response.arrayBuffer()));
+    } catch (error) {
+      console.warn('Default texture pack unavailable; using color fallbacks.', error);
+    }
   }
 
   async _readZip(bytes) {
@@ -85,6 +96,7 @@ export class TextureManager {
     const buf = await file.arrayBuffer();
     const bytes = new Uint8Array(buf);
 
+    await this.ready;
     for (const bitmap of this._raw.values()) bitmap.close?.();
     this._raw.clear();
     for (const texture of this._cache.values()) texture.dispose();
