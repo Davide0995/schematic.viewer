@@ -160,12 +160,56 @@ export function resolveTextureAlias(texName) {
   if (TEXTURE_ALIASES[texName]) return TEXTURE_ALIASES[texName];
   const base = texName.replace(/_(top|side|bottom|front|back)$/, '');
   if (TEXTURE_ALIASES[base]) return TEXTURE_ALIASES[base];
+
+  const colorAliases = {
+    black: 'black_stained_glass', gray: 'black_stained_glass',
+    light_gray: 'white_stained_glass', white: 'white_stained_glass',
+    brown: 'red_stained_glass', red: 'red_stained_glass',
+    orange: 'red_stained_glass', pink: 'red_stained_glass',
+    yellow: 'yellow_stained_glass', lime: 'green_stained_glass',
+    green: 'green_stained_glass', cyan: 'blue_stained_glass',
+    light_blue: 'blue_stained_glass', blue: 'blue_stained_glass',
+    purple: 'purple_stained_glass', magenta: 'purple_stained_glass',
+  };
+  const color = Object.keys(colorAliases).find(name => base.startsWith(`${name}_`));
+  if (color && /(wool|concrete|terracotta|carpet|glass|glazed_terracotta)/.test(base)) {
+    return colorAliases[color];
+  }
+
   if (/(slab|stairs|fence|fence_gate|door|trapdoor)$/.test(base)) {
     const material = base.match(/^(oak|spruce|birch|jungle|acacia|dark_oak)_/);
     return material ? `${material[1]}_planks` : 'stone';
   }
-  if (/(brick|terracotta|concrete|wool)$/.test(base)) return 'stone';
-  return null;
+
+  const families = [
+    [/water|kelp|seagrass|lily_pad/, 'water_still'],
+    [/lava|magma/, 'lava_still'],
+    [/glass|ice/, 'glass'],
+    [/coal/, 'coal_ore'],
+    [/iron/, 'iron_ore'],
+    [/gold/, 'gold_ore'],
+    [/diamond/, 'diamond_ore'],
+    [/emerald/, 'emerald_ore'],
+    [/redstone/, 'redstone_ore'],
+    [/lapis/, 'lapis_ore'],
+    [/ore/, 'stone'],
+    [/brick/, 'bricks'],
+    [/sandstone|sand/, 'sand'],
+    [/gravel/, 'gravel'],
+    [/dirt|mud|farmland/, 'dirt'],
+    [/grass|moss|azalea/, 'grass_block_side'],
+    [/leaves|vine|bush|flower|plant|sapling/, 'oak_leaves'],
+    [/log|wood|planks/, 'oak_planks'],
+    [/terracotta|concrete|wool|carpet/, 'stone'],
+    [/quartz|prismarine|purpur|netherrack|nether/, 'stone'],
+    [/copper/, 'gold_block'],
+    [/cobble|stone|andesite|diorite|granite|deepslate|blackstone/, 'stone'],
+    [/torch|lantern|light|glow/, 'torch'],
+    [/rail|ladder/, 'rail'],
+    [/tnt/, 'tnt_side'],
+    [/furnace|smoker|dispenser|dropper/, 'furnace_side'],
+  ];
+  return families.find(([pattern]) => pattern.test(base))?.[1] ?? 'stone';
 }
 
 export class TextureManager {
@@ -263,6 +307,10 @@ export class TextureManager {
   getFallbackForBlock(blockName, texName = blockName) {
     const fallbackKey = `${blockName}:${texName}`;
     if (this._fallbacks.has(fallbackKey)) return this._fallbacks.get(fallbackKey);
+    const resolvedName = resolveTextureAlias(texName);
+    if (resolvedName && this._raw.has(resolvedName)) {
+      return this.getTexture(resolvedName);
+    }
     const color = blockNameToColor(blockName);
     const tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(color)));
     this._fallbacks.set(fallbackKey, tex);
