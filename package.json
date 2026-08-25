@@ -25,10 +25,10 @@
   },
   "dependencies": {
     "fflate": "^0.8.2",
-    "three": "^0.167.0"
+    "three": "^0.185.1"
   },
   "devDependencies": {
-    "playwright": "^1.60.0",
+    "playwright": "^1.62.1",
     "vite": "^8.2.2"
   }
 }
