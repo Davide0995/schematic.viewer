@@ -11,7 +11,7 @@ A browser-based viewer for Minecraft `.litematic`, `.schematic`, and compatible 
 - View Litematica `.litematic` files
 - View classic WorldEdit/MCEdit `.schematic` files
 - Load compatible `.nbt` files
-- Included original default texture pack, with optional textures from a Minecraft resource-pack `.zip` or `.jar`
+- VoxeLibre-based default texture pack under CC BY-SA, with optional user-provided Minecraft resource packs
 - Orbit, pan, zoom, and camera reset controls
 - Hidden-face culling for more efficient geometry
 - Wireframe overlay and ground grid
@@ -34,11 +34,11 @@ npm install
 npm run dev
 ```
 
-Regenerate the included original default texture pack after editing its source palette:
+The included default pack is based on VoxeLibre textures and is distributed under the terms documented in [public/default-textures/ATTRIBUTION.md](public/default-textures/ATTRIBUTION.md). User-provided packs override it for the current browser session.
 
-```bash
-npm run generate:textures
-```
+## Default texture attribution
+
+The bundled default texture pack is adapted from [VoxeLibre](https://github.com/VoxeLibre/VoxeLibre), with the original texture work credited by VoxeLibre to **XSSheep** and the Pixel Perfection resource pack. The applicable texture assets are distributed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). This project preserves that attribution and ShareAlike requirement; see the complete [asset attribution](public/default-textures/ATTRIBUTION.md) for source links and details about the adapted Minecraft-style paths.
 
 Create a production build and preview it locally:
 
@@ -63,13 +63,13 @@ npm run preview
 - Some block states, orientations, custom blocks, fluids, and transparency effects may not match Minecraft exactly.
 - Entities, inventories, signs, banners, and other block-entity data are not currently rendered.
 - Very large files can require substantial browser memory and GPU resources.
-- The viewer includes an original bitmap texture pack with recognizable textures for common blocks. User-supplied resource packs can override it and are not included in this repository.
+- The bundled default pack is not made from Mojang assets. It is a VoxeLibre-based pack with attribution and license information in `public/default-textures/`. Users can load their own resource pack for higher-fidelity results.
 
 Please include the file format, Minecraft/Litematica version, browser, and whether a resource pack was loaded when reporting a compatibility problem.
 
 ## Privacy and assets
 
-Schematic and resource-pack files are processed locally in your browser. This project does not provide a server upload or cloud storage service. Do not provide files that you are not allowed to use or share.
+Schematic and resource-pack files are processed locally in your browser and are discarded when the page session ends. This project does not provide a server upload or cloud storage service. Users are responsible for having the right to use any additional resource pack they select.
 
 Minecraft, Mojang, Litematica, WorldEdit, and any third-party resource packs are trademarks or assets of their respective owners. This project is not affiliated with or endorsed by Mojang.
 
