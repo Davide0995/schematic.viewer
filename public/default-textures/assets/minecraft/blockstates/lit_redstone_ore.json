@@ -1,7 +1,7 @@
 {
     "variants": {
         "": [
-            { "model": "block/ore/redstone/0" },
+            { "model": "block/lit_redstone_ore" },
             { "model": "block/ore/redstone/1"}
 		]
     }

@@ -271,11 +271,12 @@ export class TextureManager {
   }
 
   getDiagnostics() {
+    const packFormat = this._packMeta?.pack?.pack_format;
     return {
       usingUserPack: this._usingUserPack,
       loaded: this.loaded,
       rawTextureCount: this._raw.size,
-      packFormat: this._packMeta?.pack?.pack_format ?? null,
+      packFormat: Array.isArray(packFormat) ? packFormat[0] : (packFormat ?? null),
       resolveCalls: this._resolveCalls,
       fallbackCalls: this._fallbackCalls,
       missingTextures: Array.from(this._missingTextures).slice(0, 12),
