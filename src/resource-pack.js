@@ -23,6 +23,18 @@ function variantMatches(key, properties) {
   });
 }
 
+function conditionMatches(name, expectedValue, properties) {
+  const expected = String(expectedValue).split('|');
+  return expected.includes(properties[name]);
+}
+
+function multipartMatches(when, properties) {
+  if (!when) return true;
+  if (Array.isArray(when.OR)) return when.OR.some(part => multipartMatches(part, properties));
+  if (Array.isArray(when.AND)) return when.AND.every(part => multipartMatches(part, properties));
+  return Object.entries(when).every(([name, expectedValue]) => conditionMatches(name, expectedValue, properties));
+}
+
 export function selectBlockState(blockName, blockstates) {
   const blockId = normalizeId(blockName.split('[')[0]);
   const state = blockstates.get(blockId);
@@ -38,7 +50,15 @@ export function selectBlockState(blockName, blockstates) {
     return (Array.isArray(value) ? value : [value]).filter(Boolean);
   }
 
-  if (state.multipart) return null;
+  if (state.multipart) {
+    const choices = [];
+    for (const part of state.multipart) {
+      if (!multipartMatches(part.when, properties)) continue;
+      const apply = Array.isArray(part.apply) ? part.apply : [part.apply];
+      choices.push(...apply.filter(Boolean));
+    }
+    return choices.length ? choices : null;
+  }
   return null;
 }
 
@@ -105,24 +125,31 @@ export function resolveModel(modelName, models, seen = new Set()) {
   return resolved;
 }
 
-export function resolveBlockModel(blockName, blockstates, models) {
+export function resolveBlockModels(blockName, blockstates, models) {
   const choices = selectBlockState(blockName, blockstates);
-  if (!choices?.length) return null;
-  const choice = choices[0];
-  const model = resolveModel(choice.model, models);
-  if (!model) return null;
-  const elements = model.elements.map(element => ({
-    ...element,
-    faces: Object.fromEntries(Object.entries(element.faces ?? {}).map(([faceName, face]) => [
-      faceName,
-      { ...face, texture: resolveTextureReference(face.texture, model.textures) ?? face.texture },
-    ])),
-  }));
-  return {
-    ...model,
-    elements,
-    rotation: { x: choice.x ?? 0, y: choice.y ?? 0 },
-  };
+  if (!choices?.length) return [];
+
+  return choices.map(choice => {
+    const model = resolveModel(choice.model, models);
+    if (!model) return null;
+    const elements = (model.elements ?? []).map(element => ({
+      ...element,
+      faces: Object.fromEntries(Object.entries(element.faces ?? {}).map(([faceName, face]) => [
+        faceName,
+        { ...face, texture: resolveTextureReference(face.texture, model.textures) ?? face.texture },
+      ])),
+    }));
+    return {
+      ...model,
+      elements,
+      rotation: { x: choice.x ?? 0, y: choice.y ?? 0 },
+      uvlock: Boolean(choice.uvlock),
+    };
+  }).filter(Boolean);
+}
+
+export function resolveBlockModel(blockName, blockstates, models) {
+  return resolveBlockModels(blockName, blockstates, models)[0] ?? null;
 }
 
 export function parseResourcePackJson(files) {
