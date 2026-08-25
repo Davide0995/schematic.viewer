@@ -1,0 +1,70 @@
+name: Check Minecraft stable release
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Open issue for a new Minecraft stable release
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const current = JSON.parse(fs.readFileSync('.github/minecraft-release.json', 'utf8'));
+            const response = await fetch('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json');
+            if (!response.ok) {
+              throw new Error(`Mojang version manifest returned ${response.status}`);
+            }
+
+            const payload = await response.json();
+            const latest = payload.versions.find(version => version.type === 'release');
+            if (!latest) {
+              core.setFailed('No stable Minecraft release was found.');
+              return;
+            }
+            if (latest.id === current.minecraftVersion) {
+              core.info(`No new stable Minecraft release. Current version: ${current.minecraftVersion}`);
+              return;
+            }
+
+            const marker = `minecraft-stable-release:${latest.id}`;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              per_page: 100,
+            });
+            if (issues.some(issue => issue.body?.includes(marker))) {
+              core.info(`An issue already exists for Minecraft ${latest.id}.`);
+              return;
+            }
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `chore: support Minecraft ${latest.id}`,
+              body: [
+                `<!-- ${marker} -->`,
+                'A new stable Minecraft release is available.',
+                '',
+                `- **Minecraft release:** ${latest.id}`,
+                `- **Published:** ${latest.releaseTime}`,
+                `- **Version manifest:** ${latest.url}`,
+                `- **Current supported version:** ${current.minecraftVersion}`,
+                `- **Default pack:** ${current.source}`,
+                '',
+                'Review the Minecraft asset format and pack compatibility, update the bundled assets and `.github/pixel-perfection-release.json`, then run the parser tests and production build.',
+              ].join('\n'),
+            });
+            core.notice(`Opened issue #${issue.data.number} for Minecraft ${latest.id}.`);
