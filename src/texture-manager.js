@@ -47,46 +47,12 @@ function colorCanvas(color, w=16, h=16) {
   return c;
 }
 
-function defaultTextureCanvas(texName, color) {
-  const canvas = colorCanvas(color);
-  const ctx = canvas.getContext('2d');
-  let hash = 2166136261;
-  for (let i = 0; i < texName.length; i++) {
-    hash ^= texName.charCodeAt(i);
-    hash = Math.imul(hash, 16777619) >>> 0;
-  }
-
-  // Original procedural pixel texture used when no resource pack is loaded.
-  for (let i = 0; i < 30; i++) {
-    hash = Math.imul(hash ^ (hash >>> 13), 1274126177) >>> 0;
-    const x = hash & 15;
-    const y = (hash >>> 4) & 15;
-    const size = 1 + ((hash >>> 8) & 1);
-    const shade = 8 + ((hash >>> 12) & 15);
-    ctx.fillStyle = `rgba(${shade > 15 ? 255 : 0},${shade},${shade > 15 ? 0 : 0},0.16)`;
-    ctx.fillRect(x, y, size, size);
-  }
-  return canvas;
-}
-
 export class TextureManager {
   constructor() {
     this._cache = new Map(); // texName → THREE.Texture
     this._raw   = new Map(); // texName → ImageBitmap (from pack)
     this._fallbacks = new Map(); // blockName → THREE.Texture
     this.loaded = false;
-    this.ready = this.loadDefaultPack();
-  }
-
-  async loadDefaultPack() {
-    try {
-      const response = await fetch(`${import.meta.env.BASE_URL}default-textures.zip`);
-      if (!response.ok) throw new Error(`Default texture pack request failed: ${response.status}`);
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      await this._readZip(bytes);
-    } catch (error) {
-      console.warn('Default texture pack unavailable; using color fallbacks.', error);
-    }
   }
 
   async _readZip(bytes) {
@@ -119,7 +85,10 @@ export class TextureManager {
     const buf = await file.arrayBuffer();
     const bytes = new Uint8Array(buf);
 
-    await this.ready;
+    for (const bitmap of this._raw.values()) bitmap.close?.();
+    this._raw.clear();
+    for (const texture of this._cache.values()) texture.dispose();
+    this._cache.clear();
     return this._readZip(bytes);
   }
 
