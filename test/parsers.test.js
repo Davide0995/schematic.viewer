@@ -4,6 +4,7 @@ import { gzipSync } from 'fflate';
 import { parseNBT } from '../src/nbt.js';
 import { parseSchematic } from '../src/schematic.js';
 import { parseLitematic } from '../src/litematic.js';
+import { resolveTextureAlias } from '../src/texture-manager.js';
 
 function bytes(...values) {
   return new Uint8Array(values);
@@ -209,4 +210,12 @@ test('decodes pre-1.16 spanning litematic entries', () => {
   });
 
   assert.equal(result.blocks[12], 12);
+});
+
+test('resolves missing block textures to recognizable material aliases', () => {
+  assert.equal(resolveTextureAlias('crafting_table_front'), 'oak_planks');
+  assert.equal(resolveTextureAlias('dark_oak_stairs'), 'dark_oak_planks');
+  assert.equal(resolveTextureAlias('red_sandstone_side'), 'sandstone');
+  assert.equal(resolveTextureAlias('water'), 'water_still');
+  assert.equal(resolveTextureAlias('unknown_block'), null);
 });
