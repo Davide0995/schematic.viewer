@@ -239,7 +239,7 @@ export class SchematicRenderer {
             vy ? y1 : y0,
             vz ? z1 : z0,
           ], element.rotation, model.rotation));
-          const texture = face.texture.replace(/^#/, '').replace(/^minecraft:block\//, '');
+          const texture = face.texture.replace(/^#/, '');
           const group = ensureGroup(texture, bName);
           const base = group.vertexCount;
           for (let vi = 0; vi < 4; vi++) {

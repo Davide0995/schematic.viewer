@@ -213,6 +213,18 @@ export function resolveTextureAlias(texName) {
   return families.find(([pattern]) => pattern.test(base))?.[1] ?? 'stone';
 }
 
+function canonicalTextureId(texName) {
+  if (!texName) return null;
+  const [namespacePart, pathPart] = texName.includes(':')
+    ? texName.split(':', 2)
+    : ['minecraft', texName];
+
+  let path = pathPart;
+  if (path.startsWith('textures/')) path = path.slice('textures/'.length);
+  if (path.startsWith('block/')) path = path.slice('block/'.length);
+  return `${namespacePart}:${path}`;
+}
+
 export class TextureManager {
   constructor() {
     this._cache = new Map(); // texName → THREE.Texture
@@ -284,7 +296,7 @@ export class TextureManager {
   }
 
   _buildFromBitmap(texName, bitmap) {
-    const tint = getTextureTint(texName.replace(/^minecraft:/, ''));
+    const tint = getTextureTint(texName.split(':')[1]);
     let source;
     if (tint) {
       source = applyTint(bitmap, tint);
@@ -308,12 +320,14 @@ export class TextureManager {
     if (this._cache.has(texName)) return this._cache.get(texName);
 
     let tex;
-    const normalizedName = texName.includes(':') ? texName : `minecraft:${texName}`;
-    const shortName = normalizedName.replace(/^minecraft:/, '');
+    const normalizedName = canonicalTextureId(texName);
+    const [namespace, shortName] = normalizedName.split(':', 2);
     const aliasName = resolveTextureAlias(shortName);
     const resolvedName = this._raw.has(normalizedName)
       ? normalizedName
-      : (this._raw.has(`minecraft:${aliasName}`) ? `minecraft:${aliasName}` : aliasName);
+      : (this._raw.has(`${namespace}:${aliasName}`)
+        ? `${namespace}:${aliasName}`
+        : (this._raw.has(`minecraft:${aliasName}`) ? `minecraft:${aliasName}` : aliasName));
     if (resolvedName && this._raw.has(resolvedName)) {
       tex = this._buildFromBitmap(resolvedName, this._raw.get(resolvedName));
     } else {
@@ -326,7 +340,7 @@ export class TextureManager {
   getFallbackForBlock(blockName, texName = blockName) {
     const fallbackKey = `${blockName}:${texName}`;
     if (this._fallbacks.has(fallbackKey)) return this._fallbacks.get(fallbackKey);
-    const shortName = texName.replace(/^minecraft:/, '');
+    const shortName = canonicalTextureId(texName).split(':')[1];
     const resolvedName = resolveTextureAlias(shortName);
     if (resolvedName && this._raw.has(`minecraft:${resolvedName}`)) {
       return this.getTexture(`minecraft:${resolvedName}`);
