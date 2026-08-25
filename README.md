@@ -11,7 +11,7 @@ A browser-based viewer for Minecraft `.litematic`, `.schematic`, and compatible 
 - View Litematica `.litematic` files
 - View classic WorldEdit/MCEdit `.schematic` files
 - Load compatible `.nbt` files
-- VoxeLibre-based default texture pack under CC BY-SA, with optional user-provided Minecraft resource packs
+- Pixel Perfection Community Edition default resource pack under CC BY-SA 4.0, with optional user-provided Minecraft resource packs
 - Orbit, pan, zoom, and camera reset controls
 - Hidden-face culling for more efficient geometry
 - Wireframe overlay and ground grid
@@ -34,11 +34,11 @@ npm install
 npm run dev
 ```
 
-The included default pack is based on VoxeLibre textures and is distributed under the terms documented in [public/default-textures/ATTRIBUTION.md](public/default-textures/ATTRIBUTION.md). User-provided packs override it for the current browser session.
+The included default pack is Pixel Perfection Community Edition (CE), a complete 16x Minecraft resource pack distributed under CC BY-SA 4.0. Its license and attribution are documented in [public/default-textures/ATTRIBUTION.md](public/default-textures/ATTRIBUTION.md). User-provided packs override it for the current browser session.
 
 ## Default texture attribution
 
-The bundled default texture pack is adapted from [VoxeLibre](https://github.com/VoxeLibre/VoxeLibre), with the original texture work credited by VoxeLibre to **XSSheep** and the Pixel Perfection resource pack. The applicable texture assets are distributed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). This project preserves that attribution and ShareAlike requirement; see the complete [asset attribution](public/default-textures/ATTRIBUTION.md) for source links and details about the adapted Minecraft-style paths.
+The bundled default texture pack is [Pixel Perfection Community Edition](https://github.com/Athemis/PixelPerfectionCE), originally created by **XSSheep** and maintained by the community. It includes blockstates, models, and textures and is distributed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This project preserves the attribution and ShareAlike requirements; see the complete [asset attribution](public/default-textures/ATTRIBUTION.md).
 
 Create a production build and preview it locally:
 
@@ -63,7 +63,7 @@ npm run preview
 - Some block states, orientations, custom blocks, fluids, and transparency effects may not match Minecraft exactly.
 - Entities, inventories, signs, banners, and other block-entity data are not currently rendered.
 - Very large files can require substantial browser memory and GPU resources.
-- The bundled default pack is not made from Mojang assets. It is a VoxeLibre-based pack with attribution and license information in `public/default-textures/`. Users can load their own resource pack for higher-fidelity results.
+- The bundled default pack is not made from Mojang assets. It is Pixel Perfection CE with attribution and license information in `public/default-textures/`. Users can load another resource pack for different styles or version-specific assets.
 
 Please include the file format, Minecraft/Litematica version, browser, and whether a resource pack was loaded when reporting a compatibility problem.
 
