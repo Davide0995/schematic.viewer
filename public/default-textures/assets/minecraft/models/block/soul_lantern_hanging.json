@@ -5,6 +5,7 @@
 	"textures": {
 		"1": "block/soul_lantern",
 		"2": "block/soul_lantern_extra",
+		"3": "block/soul_lantern_e",
 		"particle": "item/soul_lantern"
 	},
 	"elements": [
@@ -100,26 +101,50 @@
 				"south": {"uv": [0, 10, 8, 11], "texture": "#2"},
 				"west": {"uv": [0, 10, 8, 11], "texture": "#2"}
 			}
+		},
+		{
+			"name": "emissive",
+			"from": [5, 3, 5],
+			"to": [11, 7, 11],
+			"shade": false,
+			"light_emission": 12,
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 1, 0]},
+			"faces": {
+				"north": {"uv": [0, 3, 6, 7], "texture": "#3"},
+				"east": {"uv": [0, 3, 6, 7], "texture": "#3"},
+				"south": {"uv": [0, 3, 6, 7], "texture": "#3"},
+				"west": {"uv": [0, 3, 6, 7], "texture": "#3"}
+			}
 		}
 	],
 	"groups": [
 		{
 			"name": "body",
 			"origin": [0, 0, 0],
+			"scope": 0,
 			"color": 0,
 			"children": [0, 1, 2, 3]
 		},
 		{
 			"name": "chain",
 			"origin": [8, 8, 8],
+			"scope": 0,
 			"color": 0,
 			"children": [4, 5]
 		},
 		{
 			"name": "group",
 			"origin": [8, 8, 8],
+			"scope": 0,
 			"color": 0,
 			"children": [6, 7]
+		},
+		{
+			"name": "emissives",
+			"origin": [0, 0, 0],
+			"scope": 0,
+			"color": 0,
+			"children": [8]
 		}
 	]
 }

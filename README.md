@@ -11,7 +11,7 @@ A browser-based viewer for Minecraft `.litematic`, `.schematic`, and compatible 
 - View Litematica `.litematic` files
 - View classic WorldEdit/MCEdit `.schematic` files
 - Load compatible `.nbt` files
-- Pixel Perfection Legacy 1.21.x default resource pack under CC BY-SA 4.0, with optional user-provided Minecraft resource packs
+- Pixel Perfection Legacy 26.2 default resource pack under CC BY-SA 4.0, with optional user-provided Minecraft resource packs
 - Orbit, pan, zoom, and camera reset controls
 - Hidden-face culling for more efficient geometry
 - Wireframe overlay and ground grid
@@ -34,13 +34,13 @@ npm install
 npm run dev
 ```
 
-The included default pack is Pixel Perfection Legacy for Minecraft 1.21.x, a complete 16x resource pack distributed under CC BY-SA 4.0. Its license and attribution are documented in [public/default-textures/ATTRIBUTION.md](public/default-textures/ATTRIBUTION.md). User-provided packs override it for the current browser session.
+The included default pack is Pixel Perfection Legacy for Minecraft 26.2, a complete 16x resource pack distributed under CC BY-SA 4.0. Its 1.21.x compatibility overlay covers older files such as your 1.21.11 schematic. Its license and attribution are documented in [public/default-textures/ATTRIBUTION.md](public/default-textures/ATTRIBUTION.md). User-provided packs override it for the current browser session.
 
 The viewer reads the litematic `MinecraftDataVersion` and the resource pack `pack.mcmeta`. Older schematic files continue to use their namespaced block IDs and states, while the UI reports when an older default pack may not contain newer block assets. For the closest result, load a pack matching the Minecraft version that created the schematic.
 
 ## Default texture attribution
 
-The bundled default texture pack is [Pixel Perfection Legacy](https://www.curseforge.com/minecraft/texture-packs/pixel-perfection-legacy), originally created by **XSSheep** and continued by **Nova_Wostra** and contributors. The bundled 1.21.x release includes blockstates, models, and textures and is distributed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This project preserves the attribution and ShareAlike requirements; see the complete [asset attribution](public/default-textures/ATTRIBUTION.md).
+The bundled default texture pack is [Pixel Perfection Legacy](https://www.curseforge.com/minecraft/texture-packs/pixel-perfection-legacy), originally created by **XSSheep** and continued by **Nova_Wostra** and contributors. The bundled 26.2 release includes current blockstates, models, textures, and a 1.21.x compatibility overlay and is distributed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This project preserves the attribution and ShareAlike requirements; see the complete [asset attribution](public/default-textures/ATTRIBUTION.md).
 
 Create a production build and preview it locally:
 
@@ -66,7 +66,7 @@ npm run preview
 - Entities, inventories, signs, banners, and other block-entity data are not currently rendered.
 - Very large files can require substantial browser memory and GPU resources.
 - The bundled default pack is not made from Mojang assets. It is Pixel Perfection Legacy with attribution and license information in `public/default-textures/`. Users can load another resource pack for different styles or version-specific assets.
-- The bundled Pixel Perfection Legacy release targets Minecraft 1.21.x; older schematic IDs and states remain supported, while newer or modded blocks may still require a matching user pack.
+- The bundled Pixel Perfection Legacy release targets Minecraft 26.2 and includes a 1.21.x overlay; older schematic IDs and states remain supported, while newer or modded blocks may still require a matching user pack.
 
 Please include the file format, Minecraft/Litematica version, browser, and whether a resource pack was loaded when reporting a compatibility problem.
 
