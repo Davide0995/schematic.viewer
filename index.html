@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft Schematic Viewer</title>
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="sidebar">
+      <div id="logo">
+        <span class="logo-icon">⛏</span>
+        <span>Schematic Viewer</span>
+      </div>
+
+      <section class="panel">
+        <h3>Load File</h3>
+        <div class="drop-zone" id="schematic-drop">
+          <input type="file" id="schematic-file" accept=".litematic,.schematic,.nbt">
+          <label for="schematic-file">
+            <div class="drop-icon">📦</div>
+            <div class="drop-text">Drop or click to load</div>
+            <div class="drop-sub">.litematic · .schematic · .nbt</div>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Block Textures <span class="optional">optional</span></h3>
+        <div class="drop-zone" id="texture-drop">
+          <input type="file" id="texture-pack" accept=".zip,.jar">
+          <label for="texture-pack">
+            <div class="drop-icon">🎨</div>
+            <div class="drop-text">Drop resource pack</div>
+            <div class="drop-sub">.zip or Minecraft .jar</div>
+          </label>
+        </div>
+        <div id="texture-status"></div>
+      </section>
+
+      <section class="panel" id="info-panel" hidden>
+        <h3>Info</h3>
+        <div id="schematic-info"></div>
+      </section>
+
+      <section class="panel">
+        <h3>Controls</h3>
+        <label class="toggle">
+          <input type="checkbox" id="show-grid"> Show grid
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="show-wireframe"> Wireframe overlay
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="cull-faces" checked> Cull hidden faces
+        </label>
+        <div class="slider-row">
+          <span>Y min</span>
+          <input type="range" id="slice-y-min" min="0" max="320" value="0">
+          <span id="slice-y-min-val">0</span>
+        </div>
+        <div class="slider-row">
+          <span>Y max</span>
+          <input type="range" id="slice-y-max" min="0" max="320" value="320">
+          <span id="slice-y-max-val">320</span>
+        </div>
+        <button id="rebuild-btn" disabled>Rebuild View</button>
+      </section>
+
+      <section class="panel">
+        <h3>Camera</h3>
+        <button id="reset-camera">Reset Camera</button>
+        <div class="hint">LMB drag: rotate · RMB drag: pan · Scroll: zoom</div>
+      </section>
+    </div>
+
+    <div id="canvas-wrap">
+      <canvas id="main-canvas"></canvas>
+      <div id="loading" hidden>
+        <div class="spinner"></div>
+        <div id="loading-text">Loading…</div>
+      </div>
+      <div id="empty-state">
+        <div class="es-icon">🏗</div>
+        <div class="es-text">Load a schematic to begin</div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
