@@ -17,6 +17,7 @@ A browser-based viewer for Minecraft `.litematic`, `.schematic`, and compatible 
 - Wireframe overlay and ground grid
 - Y-axis slicing for inspecting individual layers
 - Runs entirely in the browser; files are not uploaded
+- Automatically tracks new stable Minecraft releases and opens a maintenance issue when one is published
 
 ## Quick start
 
@@ -37,6 +38,8 @@ npm run dev
 The included default pack is Pixel Perfection Legacy for Minecraft 26.2, a complete 16x resource pack distributed under CC BY-SA 4.0. Its 1.21.x compatibility overlay covers older files such as your 1.21.11 schematic. Its license and attribution are documented in [public/default-textures/ATTRIBUTION.md](public/default-textures/ATTRIBUTION.md). User-provided packs override it for the current browser session.
 
 The viewer reads the litematic `MinecraftDataVersion` and the resource pack `pack.mcmeta`. Older schematic files continue to use their namespaced block IDs and states, while the UI reports when an older default pack may not contain newer block assets. For the closest result, load a pack matching the Minecraft version that created the schematic.
+
+GitHub Actions checks Mojang's official version manifest daily and ignores snapshots and pre-releases. When a new stable release appears, it opens one deduplicated maintenance issue so the pack and compatibility code can be reviewed.
 
 ## Default texture attribution
 
