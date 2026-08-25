@@ -278,6 +278,20 @@ test('resolves resource-pack model parents and texture references', () => {
   assert.equal(model.textures.all, 'minecraft:block/stone');
 });
 
+test('resolves vanilla cube parents omitted by resource packs', () => {
+  const models = new Map([
+    ['minecraft:block/stone', { parent: 'minecraft:block/cube_all', textures: { all: 'minecraft:block/stone' } }],
+  ]);
+  const blockstates = new Map([
+    ['minecraft:stone', { variants: { '': { model: 'minecraft:block/stone' } } }],
+  ]);
+
+  const model = resolveBlockModel('minecraft:stone', blockstates, models);
+
+  assert.equal(model.elements.length, 1);
+  assert.equal(model.elements[0].faces.up.texture, 'minecraft:block/stone');
+});
+
 test('parses blockstates and models from resource-pack paths', () => {
   const files = {
     'assets/minecraft/blockstates/stone.json': new TextEncoder().encode('{"variants":{"":{"model":"minecraft:block/stone"}}}'),

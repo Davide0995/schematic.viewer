@@ -50,6 +50,32 @@ function mergeModel(parent, child) {
   };
 }
 
+const CUBE_ELEMENTS = [{
+  from: [0, 0, 0], to: [16, 16, 16],
+  faces: {
+    down: { texture: '#down' }, up: { texture: '#up' },
+    north: { texture: '#north' }, south: { texture: '#south' },
+    west: { texture: '#west' }, east: { texture: '#east' },
+  },
+}];
+
+function vanillaParentModel(modelId) {
+  const parent = modelId.split(':')[1]?.replace(/^block\//, '');
+  if (parent === 'cube_all') {
+    return { elements: CUBE_ELEMENTS, textures: { down: '#all', up: '#all', north: '#all', south: '#all', west: '#all', east: '#all' } };
+  }
+  if (parent === 'cube_bottom_top') {
+    return { elements: CUBE_ELEMENTS, textures: { down: '#bottom', up: '#top', north: '#side', south: '#side', west: '#side', east: '#side' } };
+  }
+  if (parent === 'cube_column') {
+    return { elements: CUBE_ELEMENTS, textures: { down: '#end', up: '#end', north: '#side', south: '#side', west: '#side', east: '#side' } };
+  }
+  if (parent === 'cube_column_horizontal') {
+    return { elements: CUBE_ELEMENTS, textures: { down: '#side', up: '#side', north: '#end', south: '#end', west: '#side', east: '#side' } };
+  }
+  return null;
+}
+
 export function resolveTextureReference(reference, textures) {
   let value = reference;
   const seen = new Set();
@@ -65,7 +91,7 @@ export function resolveTextureReference(reference, textures) {
 export function resolveModel(modelName, models, seen = new Set()) {
   const modelId = normalizeId(modelName);
   if (!modelId || seen.has(modelId)) return null;
-  const model = models.get(modelId);
+  const model = models.get(modelId) ?? vanillaParentModel(modelId);
   if (!model) return null;
   seen.add(modelId);
 
