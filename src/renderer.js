@@ -61,7 +61,11 @@ export class SchematicRenderer {
     const w = this.canvas.clientWidth || window.innerWidth;
     const h = this.canvas.clientHeight || window.innerHeight;
 
-    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+    try {
+      this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+    } catch (error) {
+      throw new Error('WebGL could not be initialized. Try a browser with hardware acceleration enabled.');
+    }
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(w, h);
     this.renderer.setClearColor(0x1a1a1f);

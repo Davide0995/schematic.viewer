@@ -17,7 +17,7 @@
       <section class="panel">
         <h3>Load File</h3>
         <div class="drop-zone" id="schematic-drop">
-          <input type="file" id="schematic-file" accept=".litematic,.schematic,.nbt">
+          <input type="file" id="schematic-file" accept=".litematic,.schematic,.nbt" aria-label="Choose a schematic file">
           <label for="schematic-file">
             <div class="drop-icon">📦</div>
             <div class="drop-text">Drop or click to load</div>
@@ -29,7 +29,7 @@
       <section class="panel">
         <h3>Block Textures <span class="optional">optional</span></h3>
         <div class="drop-zone" id="texture-drop">
-          <input type="file" id="texture-pack" accept=".zip,.jar">
+          <input type="file" id="texture-pack" accept=".zip,.jar" aria-label="Choose a resource pack">
           <label for="texture-pack">
             <div class="drop-icon">🎨</div>
             <div class="drop-text">Drop resource pack</div>
@@ -57,12 +57,12 @@
         </label>
         <div class="slider-row">
           <span>Y min</span>
-          <input type="range" id="slice-y-min" min="0" max="320" value="0">
+          <input type="range" id="slice-y-min" min="0" max="320" value="0" aria-label="Minimum Y layer">
           <span id="slice-y-min-val">0</span>
         </div>
         <div class="slider-row">
           <span>Y max</span>
-          <input type="range" id="slice-y-max" min="0" max="320" value="320">
+          <input type="range" id="slice-y-max" min="0" max="320" value="320" aria-label="Maximum Y layer">
           <span id="slice-y-max-val">320</span>
         </div>
         <button id="rebuild-btn" disabled>Rebuild View</button>
@@ -76,9 +76,9 @@
     </div>
 
     <div id="canvas-wrap">
-      <canvas id="main-canvas"></canvas>
-      <div id="error-state" role="alert" hidden></div>
-      <div id="loading" hidden>
+      <canvas id="main-canvas" role="img" aria-label="Three-dimensional schematic preview"></canvas>
+      <div id="error-state" role="alert" aria-live="assertive" hidden></div>
+      <div id="loading" role="status" aria-live="polite" hidden>
         <div class="spinner"></div>
         <div id="loading-text">Loading…</div>
       </div>

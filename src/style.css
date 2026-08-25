@@ -106,6 +106,7 @@ button {
 }
 button:hover:not(:disabled) { background: var(--border); border-color: var(--accent); }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 #rebuild-btn { margin-top: 2px; }
 
@@ -146,3 +147,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 #empty-state.hidden { display: none; }
 .es-icon { font-size: 56px; opacity: 0.3; }
 .es-text { color: var(--text-dim); font-size: 14px; }
+
+@media (max-width: 700px) {
+  body { overflow: auto; }
+  #app { min-height: 100vh; height: auto; flex-direction: column; }
+  #sidebar { width: 100%; min-width: 0; max-height: 46vh; border-right: 0; border-bottom: 1px solid var(--border); }
+  #canvas-wrap { min-height: 54vh; height: 54vh; }
+  #logo { padding: 12px 14px; }
+  .panel { padding: 10px 12px; }
+  button { min-height: 36px; }
+}
