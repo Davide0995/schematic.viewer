@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { unzip } from 'fflate';
 import { blockNameToColor, getTextureTint } from './block-registry.js';
-import { parseResourcePackJson, resolveBlockModel } from './resource-pack.js';
+import { parseResourcePackJson, resolveBlockModel, resolveBlockModels } from './resource-pack.js';
 
 function nearestFilter(tex) {
   tex.magFilter = THREE.NearestFilter;
@@ -318,6 +318,10 @@ export class TextureManager {
 
   getBlockModel(blockName) {
     return resolveBlockModel(blockName, this._blockstates, this._models);
+  }
+
+  getBlockModels(blockName) {
+    return resolveBlockModels(blockName, this._blockstates, this._models);
   }
 
   _buildFromBitmap(texName, bitmap) {

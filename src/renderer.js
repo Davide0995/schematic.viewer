@@ -264,9 +264,11 @@ export class SchematicRenderer {
           if (!isOpaque(bName) && bName.includes('air')) continue;
 
           const faceTextures = getBlockFaceTextures(bName);
-          const resourceModel = texMgr.getBlockModel?.(bName);
-          if (resourceModel?.elements?.length) {
-            addModel(resourceModel, bName, x, y, z);
+          const resourceModels = texMgr.getBlockModels?.(bName) ?? [texMgr.getBlockModel?.(bName)].filter(Boolean);
+          if (resourceModels.some(model => model?.elements?.length)) {
+            for (const resourceModel of resourceModels) {
+              if (resourceModel?.elements?.length) addModel(resourceModel, bName, x, y, z);
+            }
             continue;
           }
           const boxes = getBlockBoxes(bName);

@@ -9,6 +9,7 @@ import {
   blockStateProperties,
   parseResourcePackJson,
   resolveBlockModel,
+  resolveBlockModels,
   resolveModel,
   selectBlockState,
 } from '../src/resource-pack.js';
@@ -264,6 +265,27 @@ test('selects resource-pack blockstate variants by block properties', () => {
   assert.deepEqual(selectBlockState('minecraft:test_block[facing=east]', blockstates), [
     { model: 'minecraft:block/east', y: 90 },
   ]);
+});
+
+test('selects multipart blockstate models by conditions', () => {
+  const blockstates = new Map([['minecraft:test_fence', {
+    multipart: [
+      { apply: { model: 'minecraft:block/post' } },
+      { when: { north: 'true' }, apply: { model: 'minecraft:block/north' } },
+      { when: { OR: [{ east: 'true' }, { west: 'true' }] }, apply: { model: 'minecraft:block/side' } },
+      { when: { AND: [{ waterlogged: 'false' }, { south: 'true' }] }, apply: { model: 'minecraft:block/south' } },
+    ],
+  }]]);
+
+  const models = new Map([
+    ['minecraft:block/post', { elements: [] }],
+    ['minecraft:block/north', { elements: [] }],
+    ['minecraft:block/side', { elements: [] }],
+    ['minecraft:block/south', { elements: [] }],
+  ]);
+
+  const selected = resolveBlockModels('minecraft:test_fence[north=true,east=true,south=true,waterlogged=false]', blockstates, models);
+  assert.equal(selected.length, 4);
 });
 
 test('resolves resource-pack model parents and texture references', () => {
