@@ -13,6 +13,7 @@ const canvas         = document.getElementById('main-canvas');
 const loadingEl      = document.getElementById('loading');
 const loadingText    = document.getElementById('loading-text');
 const emptyState     = document.getElementById('empty-state');
+const errorState     = document.getElementById('error-state');
 const infoPanel      = document.getElementById('info-panel');
 const schematicInfo  = document.getElementById('schematic-info');
 const textureStatus  = document.getElementById('texture-status');
@@ -25,6 +26,7 @@ const cullCb         = document.getElementById('cull-faces');
 const wireCb         = document.getElementById('show-wireframe');
 const gridCb         = document.getElementById('show-grid');
 const resetCamBtn    = document.getElementById('reset-camera');
+let loadRequestId = 0;
 
 function showLoading(msg) {
   loadingEl.hidden = false;
@@ -32,6 +34,15 @@ function showLoading(msg) {
   emptyState.classList.add('hidden');
 }
 function hideLoading() { loadingEl.hidden = true; }
+function clearError() {
+  errorState.hidden = true;
+  errorState.textContent = '';
+}
+function showError(message) {
+  hideLoading();
+  errorState.textContent = message;
+  errorState.hidden = false;
+}
 
 function setInfo(data) {
   const { width, height, length, palette } = data;
@@ -52,9 +63,16 @@ function setInfo(data) {
 }
 
 async function loadSchematic(file) {
+  const requestId = ++loadRequestId;
+  clearError();
+  if (file.size > 256 * 1024 * 1024) {
+    showError('This file is larger than 256 MB and cannot be loaded in the browser.');
+    return;
+  }
   showLoading(`Parsing ${file.name}…`);
   try {
     const buf = await file.arrayBuffer();
+    if (requestId !== loadRequestId) return;
     const nbt = parseNBT(buf);
     const ext = file.name.split('.').pop().toLowerCase();
 
@@ -72,8 +90,8 @@ async function loadSchematic(file) {
     setInfo(data);
     await buildAndRender(data);
   } catch (err) {
-    hideLoading();
-    alert(`Failed to load schematic: ${err.message}`);
+    if (requestId !== loadRequestId) return;
+    showError(`Failed to load schematic: ${err.message}`);
     console.error(err);
   }
 }

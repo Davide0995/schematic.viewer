@@ -61,10 +61,22 @@ function unpackBlocks(blockStates, paletteSize, totalBlocks, nonSpanning) {
   return out;
 }
 
+const MAX_BLOCKS = 64 * 1024 * 1024;
+
+function validateRegionValue(value, name, allowZero = true) {
+  if (!Number.isInteger(value) || (!allowZero && value === 0)) {
+    throw new Error(`Invalid litematic ${name}`);
+  }
+  return value;
+}
+
 export function parseLitematic(nbt) {
   const root = nbt.value;
   const meta = root['Metadata'] ?? root['metadata'];
   const regions = root['Regions'] ?? root['regions'];
+  if (!regions || typeof regions !== 'object' || Object.keys(regions).length === 0) {
+    throw new Error('Litematic has no regions');
+  }
 
   // Collect all regions and merge into one volume
   const regionNames = Object.keys(regions);
@@ -77,12 +89,22 @@ export function parseLitematic(nbt) {
     const r = regions[rName];
     const pos = r['Position'] ?? { x: {value:0}, y: {value:0}, z: {value:0} };
     const size = r['Size'];
+    if (!size) throw new Error('Litematic region has no size');
     const rx = typeof pos.x === 'object' ? pos.x.value ?? pos.x : pos.x;
     const ry = typeof pos.y === 'object' ? pos.y.value ?? pos.y : pos.y;
     const rz = typeof pos.z === 'object' ? pos.z.value ?? pos.z : pos.z;
     const sx = typeof size.x === 'object' ? size.x.value ?? size.x : size.x;
     const sy = typeof size.y === 'object' ? size.y.value ?? size.y : size.y;
     const sz = typeof size.z === 'object' ? size.z.value ?? size.z : size.z;
+    validateRegionValue(rx, 'region position');
+    validateRegionValue(ry, 'region position');
+    validateRegionValue(rz, 'region position');
+    validateRegionValue(sx, 'region size', false);
+    validateRegionValue(sy, 'region size', false);
+    validateRegionValue(sz, 'region size', false);
+    if (Math.abs(sx) * Math.abs(sy) * Math.abs(sz) > MAX_BLOCKS) {
+      throw new Error('Litematic region is too large to load');
+    }
     const px = Math.min(rx, rx + sx); const ex = Math.max(rx, rx + sx);
     const py = Math.min(ry, ry + sy); const ey = Math.max(ry, ry + sy);
     const pz = Math.min(rz, rz + sz); const ez = Math.max(rz, rz + sz);
@@ -94,6 +116,7 @@ export function parseLitematic(nbt) {
   const width  = maxX - minX || 1;
   const height = maxY - minY || 1;
   const length = maxZ - minZ || 1;
+  if (width * height * length > MAX_BLOCKS) throw new Error('Litematic is too large to load');
 
   // Build merged palette and block array
   const globalPalette = ['minecraft:air'];
@@ -108,6 +131,7 @@ export function parseLitematic(nbt) {
     const palette = r['BlockStatePalette'] ?? r['Palette'] ?? [];
     const blockStates = r['BlockStates'];
     if (!blockStates) continue;
+    if (!Array.isArray(palette) || palette.length === 0) throw new Error('Litematic region has no palette');
 
     // Build local palette as block name strings
     const localPalette = palette.map(entry => {

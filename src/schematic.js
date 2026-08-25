@@ -242,6 +242,7 @@ const LEGACY_NAMES = {
 
 const WOOD_TYPES = ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak'];
 const WOOL_COLORS = ['white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black'];
+const MAX_BLOCKS = 64 * 1024 * 1024;
 
 function legacyIdToName(id, data) {
   // Special data-dependent mappings
@@ -270,12 +271,18 @@ export function parseSchematic(nbt) {
   const blockData  = root['Data'];     // Int8Array (byte array)
 
   if (!blockIds) throw new Error('No Blocks tag in schematic');
+  if (![width, height, length].every(value => Number.isInteger(value) && value > 0)) {
+    throw new Error('Invalid schematic dimensions');
+  }
 
   const palette = ['minecraft:air'];
   const nameToIdx = new Map([['minecraft:air', 0]]);
-  const blocks = new Uint32Array(width * height * length);
-
   const total = width * height * length;
+  if (total > MAX_BLOCKS) throw new Error('Schematic is too large to load');
+  if (blockIds.length < total) throw new Error('Schematic Blocks tag is truncated');
+  if (blockData && blockData.length < total) throw new Error('Schematic Data tag is truncated');
+  const blocks = new Uint32Array(total);
+
   for (let i = 0; i < total; i++) {
     const id  = blockIds[i] & 0xFF;
     const dat = blockData ? (blockData[i] & 0x0F) : 0;

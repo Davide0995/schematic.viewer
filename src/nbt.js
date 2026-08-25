@@ -7,13 +7,19 @@ class NBTReader {
     this.view = new DataView(buf instanceof ArrayBuffer ? buf : buf.buffer, buf.byteOffset ?? 0, buf.byteLength);
     this.pos = 0;
   }
-  u8()  { return this.view.getUint8(this.pos++); }
-  i8()  { return this.view.getInt8(this.pos++); }
-  i16() { const v = this.view.getInt16(this.pos, false); this.pos += 2; return v; }
-  i32() { const v = this.view.getInt32(this.pos, false); this.pos += 4; return v; }
-  f32() { const v = this.view.getFloat32(this.pos, false); this.pos += 4; return v; }
-  f64() { const v = this.view.getFloat64(this.pos, false); this.pos += 8; return v; }
+  ensure(size) {
+    if (size < 0 || this.pos + size > this.view.byteLength) {
+      throw new Error('Unexpected end of NBT data');
+    }
+  }
+  u8()  { this.ensure(1); return this.view.getUint8(this.pos++); }
+  i8()  { this.ensure(1); return this.view.getInt8(this.pos++); }
+  i16() { this.ensure(2); const v = this.view.getInt16(this.pos, false); this.pos += 2; return v; }
+  i32() { this.ensure(4); const v = this.view.getInt32(this.pos, false); this.pos += 4; return v; }
+  f32() { this.ensure(4); const v = this.view.getFloat32(this.pos, false); this.pos += 4; return v; }
+  f64() { this.ensure(8); const v = this.view.getFloat64(this.pos, false); this.pos += 8; return v; }
   i64() {
+    this.ensure(8);
     const hi = this.view.getUint32(this.pos, false);
     const lo = this.view.getUint32(this.pos + 4, false);
     this.pos += 8;
@@ -21,7 +27,8 @@ class NBTReader {
     return { hi, lo };
   }
   str() {
-    const len = this.view.getUint16(this.pos, false); this.pos += 2;
+    const len = this.i16() & 0xffff;
+    this.ensure(len);
     const bytes = new Uint8Array(this.view.buffer, this.view.byteOffset + this.pos, len);
     this.pos += len;
     return new TextDecoder().decode(bytes);
@@ -34,11 +41,18 @@ class NBTReader {
       case TAG.LONG:       return this.i64();
       case TAG.FLOAT:      return this.f32();
       case TAG.DOUBLE:     return this.f64();
-      case TAG.BYTE_ARRAY: { const n = this.i32(); const a = new Int8Array(this.view.buffer, this.view.byteOffset + this.pos, n); this.pos += n; return a; }
+      case TAG.BYTE_ARRAY: {
+        const n = this.i32();
+        this.ensure(n);
+        const a = new Int8Array(this.view.buffer, this.view.byteOffset + this.pos, n);
+        this.pos += n;
+        return a;
+      }
       case TAG.STRING:     return this.str();
       case TAG.LIST: {
         const itemType = this.u8();
         const len = this.i32();
+        if (len < 0) throw new Error('Invalid NBT list length');
         const list = [];
         for (let i = 0; i < len; i++) list.push(this.tag(itemType));
         list._listType = itemType;
@@ -56,12 +70,16 @@ class NBTReader {
       }
       case TAG.INT_ARRAY: {
         const n = this.i32();
+        if (n < 0) throw new Error('Invalid NBT int array length');
+        this.ensure(n * 4);
         const a = new Int32Array(n);
         for (let i = 0; i < n; i++) a[i] = this.i32();
         return a;
       }
       case TAG.LONG_ARRAY: {
         const n = this.i32();
+        if (n < 0) throw new Error('Invalid NBT long array length');
+        this.ensure(n * 8);
         // Store as pairs of uint32 [hi0,lo0, hi1,lo1, ...]
         const a = new Uint32Array(n * 2);
         for (let i = 0; i < n; i++) {
@@ -77,19 +95,19 @@ class NBTReader {
   }
   parse() {
     const type = this.u8();
+    if (type === TAG.END) throw new Error('NBT root cannot be an end tag');
     const name = this.str();
     return { name, value: this.tag(type) };
   }
 }
 
 export function parseNBT(buffer) {
-  let buf;
+  const input = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  let buf = input;
   // Check gzip magic bytes
-  const header = new Uint8Array(buffer instanceof ArrayBuffer ? buffer : buffer.buffer, buffer.byteOffset ?? 0, 2);
+  const header = input.subarray(0, 2);
   if (header[0] === 0x1f && header[1] === 0x8b) {
-    buf = gunzipSync(new Uint8Array(buffer instanceof ArrayBuffer ? buffer : buffer.buffer));
-  } else {
-    buf = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    buf = gunzipSync(input);
   }
   return new NBTReader(buf).parse();
 }

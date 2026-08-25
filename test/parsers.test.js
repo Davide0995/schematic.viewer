@@ -84,6 +84,10 @@ test('parses gzip-compressed NBT', () => {
   assert.equal(result.value.Width, 7);
 });
 
+test('rejects truncated NBT data with a readable error', () => {
+  assert.throws(() => parseNBT(bytes(10, 0)), /Unexpected end of NBT data/);
+});
+
 test('parses classic schematic dimensions, coordinates, and legacy block data', () => {
   const result = parseSchematic({
     value: {
@@ -109,6 +113,17 @@ test('rejects classic schematics without a Blocks tag', () => {
   assert.throws(
     () => parseSchematic({ value: { Width: 1, Height: 1, Length: 1 } }),
     /No Blocks tag in schematic/,
+  );
+});
+
+test('rejects invalid schematic dimensions and truncated arrays', () => {
+  assert.throws(
+    () => parseSchematic({ value: { Width: 0, Height: 1, Length: 1, Blocks: new Int8Array(0) } }),
+    /Invalid schematic dimensions/,
+  );
+  assert.throws(
+    () => parseSchematic({ value: { Width: 2, Height: 1, Length: 1, Blocks: new Int8Array([1]) } }),
+    /Blocks tag is truncated/,
   );
 });
 
@@ -166,6 +181,10 @@ test('merges litematic regions with negative positions', () => {
 
   assert.deepEqual([result.width, result.height, result.length], [2, 1, 1]);
   assert.deepEqual([...result.blocks], [1, 0]);
+});
+
+test('rejects litematics without regions', () => {
+  assert.throws(() => parseLitematic({ value: {} }), /Litematic has no regions/);
 });
 
 test('decodes pre-1.16 spanning litematic entries', () => {
