@@ -188,6 +188,22 @@ test('rejects litematics without regions', () => {
   assert.throws(() => parseLitematic({ value: {} }), /Litematic has no regions/);
 });
 
+test('rejects litematic regions with truncated block states', () => {
+  assert.throws(() => parseLitematic({
+    value: {
+      Metadata: { MinecraftDataVersion: 3000 },
+      Regions: {
+        Main: {
+          Position: { x: 0, y: 0, z: 0 },
+          Size: { x: 2, y: 1, z: 2 },
+          BlockStatePalette: [{ Name: 'minecraft:air' }, { Name: 'minecraft:stone' }],
+          BlockStates: new Uint32Array(0),
+        },
+      },
+    },
+  }), /BlockStates is truncated/);
+});
+
 test('decodes pre-1.16 spanning litematic entries', () => {
   const palette = Array.from({ length: 17 }, (_, index) => ({
     Name: index === 0 ? 'minecraft:air' : `minecraft:block_${index}`,

@@ -70,6 +70,14 @@ function validateRegionValue(value, name, allowZero = true) {
   return value;
 }
 
+function tagValue(value) {
+  return value && typeof value === 'object' && 'value' in value ? value.value : value;
+}
+
+function longCount(blockStates) {
+  return blockStates?._longCount ?? Math.floor(blockStates.length / 2);
+}
+
 export function parseLitematic(nbt) {
   const root = nbt.value;
   const meta = root['Metadata'] ?? root['metadata'];
@@ -90,12 +98,12 @@ export function parseLitematic(nbt) {
     const pos = r['Position'] ?? { x: {value:0}, y: {value:0}, z: {value:0} };
     const size = r['Size'];
     if (!size) throw new Error('Litematic region has no size');
-    const rx = typeof pos.x === 'object' ? pos.x.value ?? pos.x : pos.x;
-    const ry = typeof pos.y === 'object' ? pos.y.value ?? pos.y : pos.y;
-    const rz = typeof pos.z === 'object' ? pos.z.value ?? pos.z : pos.z;
-    const sx = typeof size.x === 'object' ? size.x.value ?? size.x : size.x;
-    const sy = typeof size.y === 'object' ? size.y.value ?? size.y : size.y;
-    const sz = typeof size.z === 'object' ? size.z.value ?? size.z : size.z;
+    const rx = tagValue(pos.x);
+    const ry = tagValue(pos.y);
+    const rz = tagValue(pos.z);
+    const sx = tagValue(size.x);
+    const sy = tagValue(size.y);
+    const sz = tagValue(size.z);
     validateRegionValue(rx, 'region position');
     validateRegionValue(ry, 'region position');
     validateRegionValue(rz, 'region position');
@@ -127,6 +135,7 @@ export function parseLitematic(nbt) {
   const dataVersion = meta?.['MinecraftDataVersion'] ?? meta?.['DataVersion'] ?? 0;
   const nonSpanning = dataVersion >= 2529; // 1.16+
 
+  let decodedRegions = 0;
   for (const { r, px, py, pz, sizeX, sizeY, sizeZ } of allRegions) {
     const palette = r['BlockStatePalette'] ?? r['Palette'] ?? [];
     const blockStates = r['BlockStates'];
@@ -152,6 +161,13 @@ export function parseLitematic(nbt) {
     }
 
     const totalBlocks = sizeX * sizeY * sizeZ;
+    const bitsPerEntry = Math.max(4, Math.max(2, Math.ceil(Math.log2(localPalette.length || 1))));
+    const longsNeeded = nonSpanning
+      ? Math.ceil(totalBlocks / Math.floor(64 / bitsPerEntry))
+      : Math.ceil(totalBlocks * bitsPerEntry / 64);
+    if (longCount(blockStates) < longsNeeded) {
+      throw new Error(`Litematic region BlockStates is truncated (expected ${longsNeeded} longs)`);
+    }
     let localBlocks;
     try {
       localBlocks = unpackBlocks(blockStates, localPalette.length, totalBlocks, nonSpanning);
@@ -163,9 +179,11 @@ export function parseLitematic(nbt) {
       if (invalid) {
         localBlocks = unpackBlocks(blockStates, localPalette.length, totalBlocks, !nonSpanning);
       }
-    } catch {
-      continue;
+    } catch (error) {
+      throw new Error(`Unable to decode litematic region: ${error.message}`);
     }
+
+    decodedRegions++;
 
     // Copy into global block array
     for (let ly = 0; ly < sizeY; ly++) {
@@ -186,6 +204,8 @@ export function parseLitematic(nbt) {
       }
     }
   }
+
+  if (decodedRegions === 0) throw new Error('Litematic has no decodable regions');
 
   return { width, height, length, palette: globalPalette, blocks };
 }
