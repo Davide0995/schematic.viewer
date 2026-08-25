@@ -125,6 +125,40 @@ test('rejects classic schematics without a Blocks tag', () => {
   );
 });
 
+test('preserves classic schematic block entities with normalized coordinates', () => {
+  const result = parseSchematic({
+    value: {
+      Width: 1,
+      Height: 1,
+      Length: 1,
+      Blocks: new Int8Array([0]),
+      TileEntities: [{ id: 'Sign', x: 0, y: 0, z: 0, Text1: 'Hello' }],
+    },
+  });
+
+  assert.deepEqual(result.blockEntities, [{
+    id: 'Sign', x: 0, y: 0, z: 0,
+    data: { id: 'Sign', x: 0, y: 0, z: 0, Text1: 'Hello' },
+  }]);
+});
+
+test('maps legacy colored shulker IDs instead of falling back to stone', () => {
+  const result = parseSchematic({
+    value: {
+      Width: 2,
+      Height: 1,
+      Length: 1,
+      Blocks: new Int8Array([220, 234]),
+    },
+  });
+
+  assert.deepEqual(result.palette, [
+    'minecraft:air',
+    'minecraft:orange_shulker_box',
+    'minecraft:black_shulker_box',
+  ]);
+});
+
 test('rejects invalid schematic dimensions and truncated arrays', () => {
   assert.throws(
     () => parseSchematic({ value: { Width: 0, Height: 1, Length: 1, Blocks: new Int8Array(0) } }),
