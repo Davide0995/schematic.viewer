@@ -99,6 +99,7 @@ async function loadSchematic(file) {
 async function buildAndRender(data) {
   if (!data) return;
   showLoading('Building geometry… 0%');
+  await texMgr.ready;
 
   const opts = {
     cull: cullCb.checked,
