@@ -80,7 +80,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, -apple
 #schematic-info { display: flex; flex-direction: column; gap: 4px; }
 .info-row { display: flex; justify-content: space-between; gap: 8px; }
 .info-label { color: var(--text-dim); }
-.info-val { font-weight: 500; font-family: monospace; }
+.info-val { font-weight: 500; font-family: monospace; text-align: right; max-width: 145px; word-break: break-word; }
 
 /* Toggles */
 .toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; color: var(--text); }

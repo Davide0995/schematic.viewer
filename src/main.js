@@ -44,12 +44,31 @@ function showError(message) {
   errorState.hidden = false;
 }
 
+function topBlockSummary(data, limit = 6) {
+  const counts = new Map();
+  const { palette, blocks } = data;
+  for (let i = 0; i < blocks.length; i++) {
+    const paletteIndex = blocks[i];
+    if (paletteIndex >= palette.length) continue;
+    const blockName = palette[paletteIndex];
+    if (!blockName || blockName === 'minecraft:air') continue;
+    counts.set(blockName, (counts.get(blockName) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([block, count]) => `${block.replace('minecraft:', '')} (${count.toLocaleString()})`)
+    .join(', ');
+}
+
 function setInfo(data) {
   const { width, height, length, palette } = data;
+  const topBlocks = topBlockSummary(data);
   schematicInfo.innerHTML = [
     ['Size',   `${width} × ${height} × ${length}`],
     ['Volume', `${(width*height*length).toLocaleString()} blocks`],
     ['Unique',  `${palette.length} block types`],
+    ['Top', topBlocks || 'n/a'],
   ].map(([k,v]) => `<div class="info-row"><span class="info-label">${k}</span><span class="info-val">${v}</span></div>`).join('');
 
   // Set Y slider ranges
@@ -100,6 +119,7 @@ async function buildAndRender(data) {
   if (!data) return;
   showLoading('Building geometry… 0%');
   await texMgr.ready;
+  texMgr.resetDiagnostics?.();
 
   const opts = {
     cull: cullCb.checked,
@@ -119,6 +139,16 @@ async function buildAndRender(data) {
   renderer.resetCamera(cx, cy, cz, size);
   renderer.setWireframe(wireCb.checked);
   renderer.setGrid(gridCb.checked, cx, cz, Math.max(width, length));
+
+  const diag = texMgr.getDiagnostics?.();
+  if (diag) {
+    const mode = diag.usingUserPack ? 'User pack' : 'Default pack';
+    const missing = diag.missingTextures.length
+      ? ` · missing examples: ${diag.missingTextures.join(', ')}`
+      : '';
+    textureStatus.textContent = `${mode}: ${diag.rawTextureCount} textures · fallbacks ${diag.fallbackCalls}/${diag.resolveCalls}${missing}`;
+    textureStatus.className = diag.fallbackCalls > 0 && diag.usingUserPack ? 'error' : '';
+  }
 
   hideLoading();
   emptyState.classList.add('hidden');
