@@ -233,5 +233,10 @@ test('resolves missing block textures to recognizable material aliases', () => {
   assert.equal(resolveTextureAlias('dark_oak_stairs'), 'dark_oak_planks');
   assert.equal(resolveTextureAlias('red_sandstone_side'), 'sandstone');
   assert.equal(resolveTextureAlias('water'), 'water_still');
+  assert.equal(resolveTextureAlias('mossy_cobblestone'), 'cobblestone');
+  assert.equal(resolveTextureAlias('polished_blackstone'), 'deepslate');
+  assert.equal(resolveTextureAlias('light_blue_stained_glass'), 'blue_stained_glass');
+  assert.equal(resolveTextureAlias('orange_wool'), 'red_stained_glass');
+  assert.equal(resolveTextureAlias('oxidized_copper'), 'green_stained_glass');
   assert.equal(resolveTextureAlias('unknown_block'), null);
 });
