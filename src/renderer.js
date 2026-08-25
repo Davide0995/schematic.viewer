@@ -72,6 +72,10 @@ function modelNormal(normal, elementRotation, variantRotation) {
   return endpoint.map((value, index) => (value - origin[index]) / length);
 }
 
+function modelDirection(direction, variantRotation) {
+  return modelNormal(direction, null, variantRotation).map(value => Math.round(value));
+}
+
 function modelFaceUvs(face) {
   const [u0, v0, u1, v1] = face.uv ?? [0, 0, 16, 16];
   let uvs = [[u0 / 16, 1 - v1 / 16], [u1 / 16, 1 - v1 / 16], [u1 / 16, 1 - v0 / 16], [u0 / 16, 1 - v0 / 16]];
@@ -93,6 +97,7 @@ export class SchematicRenderer {
   constructor(canvas) {
     this.canvas = canvas;
     this._meshes = [];
+    this._blockEntityObjects = [];
     this._grid = null;
     this._initScene();
     this._animate();
@@ -178,6 +183,54 @@ export class SchematicRenderer {
       else m.material.dispose();
     }
     this._meshes = [];
+    for (const object of this._blockEntityObjects) {
+      this.scene.remove(object);
+      object.material.map?.dispose();
+      object.material.dispose();
+    }
+    this._blockEntityObjects = [];
+  }
+
+  _addSignLabels(blockEntities = []) {
+    for (const entity of blockEntities) {
+      if (!String(entity.id).toLowerCase().includes('sign')) continue;
+      const data = entity.data ?? {};
+      const lines = [1, 2, 3, 4].map(index => data[`Text${index}`] ?? data[`text${index}`] ?? '')
+        .map(value => {
+          try {
+            const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+            return typeof parsed === 'object' ? parsed.text ?? '' : String(parsed ?? '');
+          } catch {
+            return String(value);
+          }
+        });
+      if (!lines.some(Boolean)) continue;
+
+      const labelCanvas = document.createElement('canvas');
+      labelCanvas.width = 256;
+      labelCanvas.height = 128;
+      const context = labelCanvas.getContext('2d');
+      context.font = '22px sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillStyle = '#fff8dc';
+      context.strokeStyle = '#2b2118';
+      context.lineWidth = 5;
+      lines.forEach((line, index) => {
+        const y = 18 + index * 30;
+        context.strokeText(line, 128, y);
+        context.fillText(line, 128, y);
+      });
+
+      const texture = new THREE.CanvasTexture(labelCanvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+      const sprite = new THREE.Sprite(material);
+      sprite.position.set(entity.x + 0.5, entity.y + 1.2, entity.z + 0.5);
+      sprite.scale.set(1.6, 0.8, 1);
+      this.scene.add(sprite);
+      this._blockEntityObjects.push(sprite);
+    }
   }
 
   /**
@@ -195,6 +248,20 @@ export class SchematicRenderer {
     // Group visible faces by their texture name
     // Each group: { texName, blockName, positions[], normals[], uvs[], indices[] }
     const groups = new Map(); // texName → group
+    const blockCache = new Map();
+
+    const getBlockRenderData = blockName => {
+      if (!blockCache.has(blockName)) {
+        const resourceModels = texMgr.getBlockModels?.(blockName) ?? [texMgr.getBlockModel?.(blockName)].filter(Boolean);
+        blockCache.set(blockName, {
+          opaque: isOpaque(blockName),
+          faceTextures: getBlockFaceTextures(blockName),
+          resourceModels,
+          boxes: resourceModels.some(model => model?.elements?.length) ? null : getBlockBoxes(blockName),
+        });
+      }
+      return blockCache.get(blockName);
+    };
 
     const ensureGroup = (texName, blockName) => {
       if (!groups.has(texName)) {
@@ -239,6 +306,13 @@ export class SchematicRenderer {
         for (const [faceName, face] of Object.entries(element.faces ?? {})) {
           const template = MODEL_FACES[faceName];
           if (!template || !face.texture) continue;
+          if (cull && face.cullface) {
+            const cullTemplate = MODEL_FACES[face.cullface];
+            if (!cullTemplate) continue;
+            const [dx, dy, dz] = modelDirection(cullTemplate.dir, model.rotation);
+            const nb = getBlock(blocks, palette, bx + dx, by + dy, bz + dz, width, height, length);
+            if (isOpaque(nb)) continue;
+          }
           const verts = template.verts.map(([vx, vy, vz]) => modelPoint([
             vx ? x1 : x0,
             vy ? y1 : y0,
@@ -266,17 +340,17 @@ export class SchematicRenderer {
           processed++;
           const bName = palette[blocks[blockIdx(x, y, z, width, length)]];
           if (!bName || bName === 'minecraft:air') continue;
-          if (!isOpaque(bName) && bName.includes('air')) continue;
+          const renderData = getBlockRenderData(bName);
+          if (!renderData.opaque && bName.includes('air')) continue;
 
-          const faceTextures = getBlockFaceTextures(bName);
-          const resourceModels = texMgr.getBlockModels?.(bName) ?? [texMgr.getBlockModel?.(bName)].filter(Boolean);
+          const { faceTextures, resourceModels } = renderData;
           if (resourceModels.some(model => model?.elements?.length)) {
             for (const resourceModel of resourceModels) {
               if (resourceModel?.elements?.length) addModel(resourceModel, bName, x, y, z);
             }
             continue;
           }
-          const boxes = getBlockBoxes(bName);
+          const { boxes } = renderData;
 
           if (boxes) {
             // ── Non-cube block (slab, stair, carpet…) ──────────────
@@ -364,6 +438,8 @@ export class SchematicRenderer {
       this.scene.add(mesh);
       this._meshes.push(mesh);
     }
+
+    this._addSignLabels(data.blockEntities);
 
     if (onProgress) onProgress(100);
     return this._meshes.length;
