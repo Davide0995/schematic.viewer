@@ -11,7 +11,7 @@ A browser-based viewer for Minecraft `.litematic`, `.schematic`, and compatible 
 - View Litematica `.litematic` files
 - View classic WorldEdit/MCEdit `.schematic` files
 - Load compatible `.nbt` files
-- Optional textures from a Minecraft resource-pack `.zip` or `.jar`
+- Original procedural default textures, with optional textures from a Minecraft resource-pack `.zip` or `.jar`
 - Orbit, pan, zoom, and camera reset controls
 - Hidden-face culling for more efficient geometry
 - Wireframe overlay and ground grid
@@ -57,7 +57,7 @@ npm run preview
 - Some block states, orientations, custom blocks, fluids, and transparency effects may not match Minecraft exactly.
 - Entities, inventories, signs, banners, and other block-entity data are not currently rendered.
 - Very large files can require substantial browser memory and GPU resources.
-- Resource packs are supplied by the user and are not included in this repository.
+- The viewer includes original procedural fallback textures. User-supplied resource packs can override them and are not included in this repository.
 
 Please include the file format, Minecraft/Litematica version, browser, and whether a resource pack was loaded when reporting a compatibility problem.
 

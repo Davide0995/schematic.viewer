@@ -47,6 +47,28 @@ function colorCanvas(color, w=16, h=16) {
   return c;
 }
 
+function defaultTextureCanvas(texName, color) {
+  const canvas = colorCanvas(color);
+  const ctx = canvas.getContext('2d');
+  let hash = 2166136261;
+  for (let i = 0; i < texName.length; i++) {
+    hash ^= texName.charCodeAt(i);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+
+  // Original procedural pixel texture used when no resource pack is loaded.
+  for (let i = 0; i < 30; i++) {
+    hash = Math.imul(hash ^ (hash >>> 13), 1274126177) >>> 0;
+    const x = hash & 15;
+    const y = (hash >>> 4) & 15;
+    const size = 1 + ((hash >>> 8) & 1);
+    const shade = 8 + ((hash >>> 12) & 15);
+    ctx.fillStyle = `rgba(${shade > 15 ? 255 : 0},${shade},${shade > 15 ? 0 : 0},0.16)`;
+    ctx.fillRect(x, y, size, size);
+  }
+  return canvas;
+}
+
 export class TextureManager {
   constructor() {
     this._cache = new Map(); // texName → THREE.Texture
@@ -117,25 +139,25 @@ export class TextureManager {
     if (this._raw.has(texName)) {
       tex = this._buildFromBitmap(texName, this._raw.get(texName));
     } else {
-      // Fallback: colored placeholder
-      tex = nearestFilter(new THREE.CanvasTexture(colorCanvas('#888')));
+      tex = nearestFilter(new THREE.CanvasTexture(defaultTextureCanvas(texName, blockNameToColor(texName))));
     }
     this._cache.set(texName, tex);
     return tex;
   }
 
-  getFallbackForBlock(blockName) {
-    if (this._fallbacks.has(blockName)) return this._fallbacks.get(blockName);
+  getFallbackForBlock(blockName, texName = blockName) {
+    const fallbackKey = `${blockName}:${texName}`;
+    if (this._fallbacks.has(fallbackKey)) return this._fallbacks.get(fallbackKey);
     const color = blockNameToColor(blockName);
-    const tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(color)));
-    this._fallbacks.set(blockName, tex);
+    const tex = nearestFilter(new THREE.CanvasTexture(defaultTextureCanvas(texName, color)));
+    this._fallbacks.set(fallbackKey, tex);
     return tex;
   }
 
   // Resolve a texture name to a THREE.Texture, using fallback color if needed
   resolve(texName, blockName) {
     if (this.loaded) return this.getTexture(texName);
-    return this.getFallbackForBlock(blockName);
+    return this.getFallbackForBlock(blockName, texName);
   }
 
   dispose() {
