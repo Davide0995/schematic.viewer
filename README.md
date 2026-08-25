@@ -36,6 +36,8 @@ npm run dev
 
 The included default pack is Pixel Perfection Community Edition (CE), a complete 16x Minecraft resource pack distributed under CC BY-SA 4.0. Its license and attribution are documented in [public/default-textures/ATTRIBUTION.md](public/default-textures/ATTRIBUTION.md). User-provided packs override it for the current browser session.
 
+The viewer reads the litematic `MinecraftDataVersion` and the resource pack `pack.mcmeta`. Older schematic files continue to use their namespaced block IDs and states, while the UI reports when an older default pack may not contain newer block assets. For the closest result, load a pack matching the Minecraft version that created the schematic.
+
 ## Default texture attribution
 
 The bundled default texture pack is [Pixel Perfection Community Edition](https://github.com/Athemis/PixelPerfectionCE), originally created by **XSSheep** and maintained by the community. It includes blockstates, models, and textures and is distributed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This project preserves the attribution and ShareAlike requirements; see the complete [asset attribution](public/default-textures/ATTRIBUTION.md).
@@ -64,6 +66,7 @@ npm run preview
 - Entities, inventories, signs, banners, and other block-entity data are not currently rendered.
 - Very large files can require substantial browser memory and GPU resources.
 - The bundled default pack is not made from Mojang assets. It is Pixel Perfection CE with attribution and license information in `public/default-textures/`. Users can load another resource pack for different styles or version-specific assets.
+- The bundled Pixel Perfection CE release targets Minecraft 1.16.2; it is not a substitute for a current official Minecraft asset pack. The viewer warns when this version gap may cause fallbacks.
 
 Please include the file format, Minecraft/Litematica version, browser, and whether a resource pack was loaded when reporting a compatibility problem.
 

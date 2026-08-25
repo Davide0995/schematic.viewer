@@ -254,6 +254,7 @@ export class TextureManager {
     this._raw   = new Map(); // texName → ImageBitmap (from pack)
     this._blockstates = new Map();
     this._models = new Map();
+    this._packMeta = null;
     this._fallbacks = new Map(); // blockName → THREE.Texture
     this._resolveCalls = 0;
     this._fallbackCalls = 0;
@@ -274,6 +275,7 @@ export class TextureManager {
       usingUserPack: this._usingUserPack,
       loaded: this.loaded,
       rawTextureCount: this._raw.size,
+      packFormat: this._packMeta?.pack?.pack_format ?? null,
       resolveCalls: this._resolveCalls,
       fallbackCalls: this._fallbackCalls,
       missingTextures: Array.from(this._missingTextures).slice(0, 12),
@@ -309,6 +311,7 @@ export class TextureManager {
         });
 
         const json = parseResourcePackJson(files);
+        this._packMeta = json.packMeta;
         for (const [key, value] of json.blockstates) this._blockstates.set(key, value);
         for (const [key, value] of json.models) this._models.set(key, value);
 

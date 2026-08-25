@@ -61,6 +61,14 @@ function topBlockSummary(data, limit = 6) {
     .join(', ');
 }
 
+function versionCompatibility(data, diagnostics) {
+  if (!data.dataVersion || !diagnostics.packFormat) return null;
+  if (data.dataVersion > 2567 && diagnostics.packFormat <= 6) {
+    return 'Pack 1.16.x; newer block states may use fallbacks.';
+  }
+  return null;
+}
+
 function setInfo(data) {
   const { width, height, length, palette } = data;
   const topBlocks = topBlockSummary(data);
@@ -143,10 +151,11 @@ async function buildAndRender(data) {
   const diag = texMgr.getDiagnostics?.();
   if (diag) {
     const mode = diag.usingUserPack ? 'User pack' : 'Default pack';
+    const compatibility = versionCompatibility(data, diag);
     const missing = diag.missingTextures.length
       ? ` · missing examples: ${diag.missingTextures.join(', ')}`
       : '';
-    textureStatus.textContent = `${mode}: ${diag.rawTextureCount} textures · fallbacks ${diag.fallbackCalls}/${diag.resolveCalls}${missing}`;
+    textureStatus.textContent = `${mode}: ${diag.rawTextureCount} textures · fallbacks ${diag.fallbackCalls}/${diag.resolveCalls}${compatibility ? ` · ${compatibility}` : ''}${missing}`;
     textureStatus.className = diag.fallbackCalls > 0 && diag.usingUserPack ? 'error' : '';
   }
 

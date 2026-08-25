@@ -157,6 +157,7 @@ test('decodes non-spanning litematic block states and properties', () => {
     },
   });
 
+  assert.equal(result.dataVersion, 3000);
   assert.deepEqual([result.width, result.height, result.length], [2, 1, 2]);
   assert.deepEqual(result.palette, [
     'minecraft:air',
@@ -342,6 +343,7 @@ test('resolves vanilla cube parents omitted by resource packs', () => {
 
 test('parses blockstates and models from resource-pack paths', () => {
   const files = {
+    'pack.mcmeta': new TextEncoder().encode('{"pack":{"pack_format":6}}'),
     'assets/minecraft/blockstates/stone.json': new TextEncoder().encode('{"variants":{"":{"model":"minecraft:block/stone"}}}'),
     'assets/minecraft/models/block/stone.json': new TextEncoder().encode('{"textures":{"all":"minecraft:block/stone"},"elements":[{"from":[0,0,0],"to":[16,16,16],"faces":{"up":{"texture":"#all"}}}]}'),
   };
@@ -350,6 +352,7 @@ test('parses blockstates and models from resource-pack paths', () => {
 
   assert.ok(parsed.blockstates.has('minecraft:stone'));
   assert.ok(parsed.models.has('minecraft:block/stone'));
+  assert.equal(parsed.packMeta.pack.pack_format, 6);
   assert.equal(model.textures.all, 'minecraft:block/stone');
   assert.equal(model.elements[0].faces.up.texture, 'minecraft:block/stone');
 });

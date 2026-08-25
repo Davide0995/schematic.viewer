@@ -221,5 +221,5 @@ export function parseLitematic(nbt) {
 
   if (decodedRegions === 0) throw new Error('Litematic has no decodable regions');
 
-  return { width, height, length, palette: globalPalette, blocks };
+  return { width, height, length, palette: globalPalette, blocks, dataVersion };
 }
