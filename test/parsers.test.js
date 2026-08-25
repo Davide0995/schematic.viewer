@@ -321,6 +321,10 @@ test('resolves missing block textures to recognizable material aliases', () => {
   assert.equal(resolveTextureAlias('mud_bricks'), 'bricks');
   assert.equal(resolveTextureAlias('spruce_leaves'), 'oak_leaves');
   assert.equal(resolveTextureAlias('unknown_block'), 'stone');
+  assert.equal(resolveTextureAlias('repeater'), 'repeater');
+  assert.equal(resolveTextureAlias('comparator'), 'comparator');
+  assert.equal(resolveTextureAlias('redstone_torch'), 'redstone_torch');
+  assert.equal(resolveTextureAlias('powered_rail'), 'powered_rail');
 });
 
 test('selects resource-pack blockstate variants by block properties', () => {
