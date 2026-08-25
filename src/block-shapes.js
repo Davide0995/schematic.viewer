@@ -108,6 +108,29 @@ function stepBoxes(facing, shape, sY0, sY1) {
 export function getBlockBoxes(blockName) {
   const base = blockName.replace('minecraft:', '').split('[')[0];
 
+  // Redstone dust is a thin component laid on the supporting block.
+  if (base === 'redstone_wire') {
+    return [{ x0:0, y0:0, z0:0, x1:1, y1:1/16, z1:1 }];
+  }
+
+  // Hoppers are a wide upper rim with a tapered-looking lower section.
+  if (base === 'hopper') {
+    return [
+      { x0:0, y0:0.5, z0:0, x1:1, y1:1, z1:1 },
+      { x0:0.25, y0:0, z0:0.25, x1:0.75, y1:0.5, z1:0.75 },
+    ];
+  }
+
+  // Composter sides leave the top open while retaining the block silhouette.
+  if (base === 'composter') {
+    return [
+      { x0:0, y0:0, z0:0, x1:1, y1:1, z1:1/16 },
+      { x0:0, y0:0, z0:15/16, x1:1, y1:1, z1:1 },
+      { x0:0, y0:0, z0:1/16, x1:1/16, y1:1, z1:15/16 },
+      { x0:15/16, y0:0, z0:1/16, x1:1, y1:1, z1:15/16 },
+    ];
+  }
+
   // ── Slabs ──────────────────────────────────────────────────────
   if (base.endsWith('_slab') || base === 'slab') {
     const props = parseProps(blockName);

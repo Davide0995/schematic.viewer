@@ -5,6 +5,8 @@ import { parseNBT } from '../src/nbt.js';
 import { parseSchematic } from '../src/schematic.js';
 import { parseLitematic } from '../src/litematic.js';
 import { resolveTextureAlias } from '../src/texture-manager.js';
+import { getBlockFaceTextures } from '../src/block-registry.js';
+import { getBlockBoxes } from '../src/block-shapes.js';
 import { sourceBlockIndexForFace } from '../src/hover.js';
 import {
   blockStateProperties,
@@ -325,6 +327,32 @@ test('resolves missing block textures to recognizable material aliases', () => {
   assert.equal(resolveTextureAlias('comparator'), 'comparator');
   assert.equal(resolveTextureAlias('redstone_torch'), 'redstone_torch');
   assert.equal(resolveTextureAlias('powered_rail'), 'powered_rail');
+});
+
+test('covers redstone and utility blocks in the bundled texture checklist', () => {
+  const checklist = {
+    chest: ['oak_planks', 'oak_planks', 'oak_planks'],
+    hopper: ['hopper_top', 'hopper_outside', 'hopper_inside'],
+    sticky_piston: ['piston_top_sticky', 'piston_side', 'piston_bottom'],
+    redstone_wire: ['redstone_dust_dot', 'redstone_dust_dot', 'redstone_dust_dot'],
+    barrel: ['barrel_top', 'barrel_side', 'barrel_bottom'],
+    composter: ['composter_top', 'composter_side', 'composter_bottom'],
+    repeater: ['repeater', 'repeater', 'repeater'],
+    comparator: ['comparator', 'comparator', 'comparator'],
+    lever: ['lever', 'lever', 'lever'],
+    redstone_torch: ['redstone_torch', 'redstone_torch', 'redstone_torch'],
+    rail: ['rail', 'rail', 'rail'],
+    powered_rail: ['powered_rail', 'powered_rail', 'powered_rail'],
+    detector_rail: ['detector_rail', 'detector_rail', 'detector_rail'],
+    activator_rail: ['activator_rail', 'activator_rail', 'activator_rail'],
+  };
+  for (const [block, expected] of Object.entries(checklist)) {
+    const faces = getBlockFaceTextures(`minecraft:${block}`);
+    assert.deepEqual([faces.top, faces.north, faces.bottom], expected, block);
+  }
+  for (const block of ['redstone_wire', 'hopper', 'composter']) {
+    assert.ok(getBlockBoxes(`minecraft:${block}`), `${block} has a custom render path`);
+  }
 });
 
 test('selects resource-pack blockstate variants by block properties', () => {
