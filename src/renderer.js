@@ -74,7 +74,12 @@ function modelNormal(normal, elementRotation, variantRotation) {
 
 function modelFaceUvs(face) {
   const [u0, v0, u1, v1] = face.uv ?? [0, 0, 16, 16];
-  return [[u0 / 16, 1 - v1 / 16], [u1 / 16, 1 - v1 / 16], [u1 / 16, 1 - v0 / 16], [u0 / 16, 1 - v0 / 16]];
+  let uvs = [[u0 / 16, 1 - v1 / 16], [u1 / 16, 1 - v1 / 16], [u1 / 16, 1 - v0 / 16], [u0 / 16, 1 - v0 / 16]];
+  const turns = ((((face.rotation ?? 0) % 360) + 360) % 360) / 90;
+  for (let i = 0; i < turns; i++) {
+    uvs = [uvs[3], uvs[0], uvs[1], uvs[2]];
+  }
+  return uvs;
 }
 
 function blockIdx(x, y, z, w, l) { return x + z * w + y * w * l; }
