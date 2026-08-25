@@ -213,6 +213,18 @@ export function resolveTextureAlias(texName) {
   return families.find(([pattern]) => pattern.test(base))?.[1] ?? 'stone';
 }
 
+function canonicalTextureId(texName) {
+  if (!texName) return null;
+  const [namespacePart, pathPart] = texName.includes(':')
+    ? texName.split(':', 2)
+    : ['minecraft', texName];
+
+  let path = pathPart;
+  if (path.startsWith('textures/')) path = path.slice('textures/'.length);
+  if (path.startsWith('block/')) path = path.slice('block/'.length);
+  return `${namespacePart}:${path}`;
+}
+
 export class TextureManager {
   constructor() {
     this._cache = new Map(); // texName → THREE.Texture
@@ -239,12 +251,13 @@ export class TextureManager {
       unzip(bytes, (err, files) => {
         if (err) { reject(err); return; }
 
-        const blockTexPrefix = 'assets/minecraft/textures/block/';
         const entries = Object.entries(files).filter(([name]) =>
-          name.startsWith(blockTexPrefix) && name.endsWith('.png')
+          /^assets\/[^/]+\/textures\/block\/.+\.png$/.test(name)
         );
         const promises = entries.map(async ([path, data]) => {
-          const texName = path.slice(blockTexPrefix.length).replace(/\.png$/, '');
+          const match = path.match(/^assets\/([^/]+)\/textures\/block\/(.+)\.png$/);
+          if (!match) return;
+          const texName = `${match[1]}:${match[2]}`;
           try {
             const bitmap = await blobToImageBitmap(new Blob([data], { type: 'image/png' }));
             this._raw.set(texName, bitmap);
@@ -283,7 +296,7 @@ export class TextureManager {
   }
 
   _buildFromBitmap(texName, bitmap) {
-    const tint = getTextureTint(texName);
+    const tint = getTextureTint(texName.split(':')[1]);
     let source;
     if (tint) {
       source = applyTint(bitmap, tint);
@@ -307,7 +320,14 @@ export class TextureManager {
     if (this._cache.has(texName)) return this._cache.get(texName);
 
     let tex;
-    const resolvedName = this._raw.has(texName) ? texName : resolveTextureAlias(texName);
+    const normalizedName = canonicalTextureId(texName);
+    const [namespace, shortName] = normalizedName.split(':', 2);
+    const aliasName = resolveTextureAlias(shortName);
+    const resolvedName = this._raw.has(normalizedName)
+      ? normalizedName
+      : (this._raw.has(`${namespace}:${aliasName}`)
+        ? `${namespace}:${aliasName}`
+        : (this._raw.has(`minecraft:${aliasName}`) ? `minecraft:${aliasName}` : aliasName));
     if (resolvedName && this._raw.has(resolvedName)) {
       tex = this._buildFromBitmap(resolvedName, this._raw.get(resolvedName));
     } else {
@@ -320,9 +340,10 @@ export class TextureManager {
   getFallbackForBlock(blockName, texName = blockName) {
     const fallbackKey = `${blockName}:${texName}`;
     if (this._fallbacks.has(fallbackKey)) return this._fallbacks.get(fallbackKey);
-    const resolvedName = resolveTextureAlias(texName);
-    if (resolvedName && this._raw.has(resolvedName)) {
-      return this.getTexture(resolvedName);
+    const shortName = canonicalTextureId(texName).split(':')[1];
+    const resolvedName = resolveTextureAlias(shortName);
+    if (resolvedName && this._raw.has(`minecraft:${resolvedName}`)) {
+      return this.getTexture(`minecraft:${resolvedName}`);
     }
     const color = blockNameToColor(blockName);
     const tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(color)));
