@@ -1,5 +1,7 @@
 # Minecraft Schematic Viewer
 
+[![CI](https://github.com/Davide0995/schematic.viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/Davide0995/schematic.viewer/actions/workflows/ci.yml)
+
 A browser-based viewer for Minecraft `.litematic`, `.schematic`, and compatible `.nbt` files. Load a build locally, inspect it in 3D, and optionally apply textures from a resource pack.
 
 [Open the live demo](https://davide0995.github.io/schematic.viewer/)

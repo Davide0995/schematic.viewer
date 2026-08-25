@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible viewer or format problem.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not upload resource packs or schematic files that you do not have permission to share.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the result and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open...
+        2. Load...
+        3. Observe...
+    validations:
+      required: true
+  - type: input
+    id: format
+    attributes:
+      label: File format and version
+      placeholder: .litematic, .schematic, or .nbt; Minecraft/Litematica/WorldEdit version
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and operating system
+      placeholder: Firefox 128 on Windows 11
+    validations:
+      required: true
+  - type: dropdown
+    id: textures
+    attributes:
+      label: Resource pack loaded?
+      options:
+        - No
+        - Yes
+        - Not applicable
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console error or additional context
+      description: Paste relevant browser console output, screenshots, or a minimal legal fixture.
