@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { isOpaque, getBlockFaceTextures } from './block-registry.js';
 import { getBlockBoxes, boxToFaces } from './block-shapes.js';
+import { sourceBlockIndexForFace } from './hover.js';
 
 // Face definitions: [dx,dy,dz], vertex offsets, uv, AO brightness
 // Vertices in CCW order from outside the face
@@ -99,7 +100,13 @@ export class SchematicRenderer {
     this._meshes = [];
     this._blockEntityObjects = [];
     this._grid = null;
+    this._raycaster = new THREE.Raycaster();
+    this._pointer = new THREE.Vector2();
+    this._pointerPosition = null;
+    this._hoverFrame = 0;
+    this._isDragging = false;
     this._initScene();
+    this._initHover();
     this._animate();
   }
 
@@ -127,6 +134,11 @@ export class SchematicRenderer {
     this.controls.dampingFactor = 0.08;
     this.controls.screenSpacePanning = false;
     this.controls.maxDistance = 1500;
+    this.controls.addEventListener('start', () => {
+      this._isDragging = true;
+      this._hideBlockTooltip();
+    });
+    this.controls.addEventListener('end', () => { this._isDragging = false; });
 
     // Ambient + directional lighting
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
@@ -135,6 +147,63 @@ export class SchematicRenderer {
     this.scene.add(sun);
 
     window.addEventListener('resize', () => this._onResize());
+  }
+
+  _initHover() {
+    this.tooltip = document.getElementById('block-tooltip');
+    if (!this.tooltip) return;
+    this.canvas.addEventListener('pointermove', event => {
+      this._pointerPosition = { clientX: event.clientX, clientY: event.clientY };
+      if (!this._hoverFrame) this._hoverFrame = requestAnimationFrame(() => {
+        this._hoverFrame = 0;
+        this._updateBlockTooltip();
+      });
+    });
+    this.canvas.addEventListener('pointerleave', () => {
+      this._pointerPosition = null;
+      this._hideBlockTooltip();
+    });
+  }
+
+  _hideBlockTooltip() {
+    if (this.tooltip) this.tooltip.hidden = true;
+  }
+
+  _updateBlockTooltip() {
+    if (!this.tooltip || !this._pointerPosition || this._isDragging || !this._meshes.length) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const x = this._pointerPosition.clientX - rect.left;
+    const y = this._pointerPosition.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+      this._hideBlockTooltip();
+      return;
+    }
+
+    this._pointer.set((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1);
+    this._raycaster.setFromCamera(this._pointer, this.camera);
+    const hit = this._raycaster.intersectObjects(this._meshes, false)[0];
+    if (!hit) {
+      this._hideBlockTooltip();
+      return;
+    }
+
+    const sourceIndex = sourceBlockIndexForFace(hit.object.userData.sourceIndices, hit.faceIndex);
+    const data = hit.object.userData.schematicData;
+    const blockName = data && sourceIndex !== undefined ? data.palette[data.blocks[sourceIndex]] : null;
+    if (!blockName || blockName === 'minecraft:air') {
+      this._hideBlockTooltip();
+      return;
+    }
+
+    this.tooltip.textContent = blockName;
+    this.tooltip.hidden = false;
+    const parentRect = this.tooltip.parentElement.getBoundingClientRect();
+    const tooltipWidth = this.tooltip.offsetWidth;
+    const tooltipHeight = this.tooltip.offsetHeight;
+    const left = Math.max(0, Math.min(x + 14, parentRect.width - tooltipWidth));
+    const top = Math.max(0, Math.min(y + 14, parentRect.height - tooltipHeight));
+    this.tooltip.style.left = `${left}px`;
+    this.tooltip.style.top = `${top}px`;
   }
 
   _onResize() {
@@ -176,6 +245,7 @@ export class SchematicRenderer {
   }
 
   clearMeshes() {
+    this._hideBlockTooltip();
     for (const m of this._meshes) {
       this.scene.remove(m);
       m.geometry.dispose();
@@ -267,7 +337,7 @@ export class SchematicRenderer {
       if (!groups.has(texName)) {
         groups.set(texName, {
           texName, blockName,
-          positions: [], normals: [], uvs: [], colors: [], indices: [],
+          positions: [], normals: [], uvs: [], colors: [], indices: [], sourceIndices: [],
           vertexCount: 0,
         });
       }
@@ -283,7 +353,7 @@ export class SchematicRenderer {
     const CHUNK = 50000; // blocks per frame yield
 
     // Helper: push one quad into the correct texture group
-    const addQuad = (texName, bName, bx, by, bz, quad) => {
+    const addQuad = (texName, bName, bx, by, bz, quad, sourceIndex) => {
       const group = ensureGroup(texName, bName);
       const base = group.vertexCount;
       const [nx, ny, nz] = quad.normal;
@@ -296,10 +366,11 @@ export class SchematicRenderer {
         group.colors.push(br, br, br);
       }
       for (const qi of QUAD_INDICES) group.indices.push(base + qi);
+      group.sourceIndices.push(sourceIndex);
       group.vertexCount += 4;
     };
 
-    const addModel = (model, bName, bx, by, bz) => {
+    const addModel = (model, bName, bx, by, bz, sourceIndex) => {
       for (const element of model.elements ?? []) {
         const [x0, y0, z0] = element.from ?? [0, 0, 0];
         const [x1, y1, z1] = element.to ?? [16, 16, 16];
@@ -329,6 +400,7 @@ export class SchematicRenderer {
             group.colors.push(template.brightness, template.brightness, template.brightness);
           }
           for (const qi of QUAD_INDICES) group.indices.push(base + qi);
+          group.sourceIndices.push(sourceIndex);
           group.vertexCount += 4;
         }
       }
@@ -346,7 +418,7 @@ export class SchematicRenderer {
           const { faceTextures, resourceModels } = renderData;
           if (resourceModels.some(model => model?.elements?.length)) {
             for (const resourceModel of resourceModels) {
-              if (resourceModel?.elements?.length) addModel(resourceModel, bName, x, y, z);
+              if (resourceModel?.elements?.length) addModel(resourceModel, bName, x, y, z, blockIdx(x, y, z, width, length));
             }
             continue;
           }
@@ -362,7 +434,7 @@ export class SchematicRenderer {
                   if (isOpaque(nb)) continue;
                 }
                 const texName = faceTextures[quad.faceName] ?? faceTextures.top;
-                addQuad(texName, bName, x, y, z, quad);
+                addQuad(texName, bName, x, y, z, quad, blockIdx(x, y, z, width, length));
               }
             }
           } else {
@@ -390,6 +462,7 @@ export class SchematicRenderer {
                 group.colors.push(br, br, br);
               }
               for (const qi of QUAD_INDICES) group.indices.push(base + qi);
+              group.sourceIndices.push(blockIdx(x, y, z, width, length));
               group.vertexCount += 4;
             }
           }
@@ -435,6 +508,8 @@ export class SchematicRenderer {
       }
 
       const mesh = new THREE.Mesh(geo, mat);
+      mesh.userData.sourceIndices = group.sourceIndices;
+      mesh.userData.schematicData = data;
       this.scene.add(mesh);
       this._meshes.push(mesh);
     }
