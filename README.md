@@ -36,6 +36,10 @@ npm run dev
 
 The included default pack is based on VoxeLibre textures and is distributed under the terms documented in [public/default-textures/ATTRIBUTION.md](public/default-textures/ATTRIBUTION.md). User-provided packs override it for the current browser session.
 
+## Default texture attribution
+
+The bundled default texture pack is adapted from [VoxeLibre](https://github.com/VoxeLibre/VoxeLibre), with the original texture work credited by VoxeLibre to **XSSheep** and the Pixel Perfection resource pack. The applicable texture assets are distributed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). This project preserves that attribution and ShareAlike requirement; see the complete [asset attribution](public/default-textures/ATTRIBUTION.md) for source links and details about the adapted Minecraft-style paths.
+
 Create a production build and preview it locally:
 
 ```bash
