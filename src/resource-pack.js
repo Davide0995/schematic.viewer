@@ -155,9 +155,14 @@ export function resolveBlockModel(blockName, blockstates, models) {
 export function parseResourcePackJson(files) {
   const blockstates = new Map();
   const models = new Map();
+  let packMeta = null;
   const decoder = new TextDecoder();
 
   for (const [path, data] of Object.entries(files)) {
+    if (path === 'pack.mcmeta') {
+      try { packMeta = JSON.parse(decoder.decode(data)); } catch {}
+      continue;
+    }
     const match = path.match(/^assets\/([^/]+)\/(blockstates|models)\/(.+)\.json$/);
     if (!match) continue;
     try {
@@ -168,5 +173,5 @@ export function parseResourcePackJson(files) {
       // Ignore unrelated or malformed JSON entries in a user-supplied pack.
     }
   }
-  return { blockstates, models };
+  return { blockstates, models, packMeta };
 }
