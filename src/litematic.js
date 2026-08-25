@@ -78,6 +78,28 @@ function longCount(blockStates) {
   return blockStates?._longCount ?? Math.floor(blockStates.length / 2);
 }
 
+function decodeRegionBlocks(blockStates, localPaletteLength, totalBlocks, preferNonSpanning) {
+  const tryDecode = (modeNonSpanning) => {
+    const decoded = unpackBlocks(blockStates, localPaletteLength, totalBlocks, modeNonSpanning);
+    let invalidCount = 0;
+    for (let i = 0; i < totalBlocks; i++) {
+      if (decoded[i] >= localPaletteLength) invalidCount++;
+    }
+    const sampleSize = Math.min(8192, totalBlocks);
+    const seen = new Set();
+    for (let i = 0; i < sampleSize; i++) seen.add(decoded[i]);
+    return { decoded, modeNonSpanning, invalidCount, uniqueSampleCount: seen.size };
+  };
+
+  const preferred = tryDecode(preferNonSpanning);
+  const alternate = tryDecode(!preferNonSpanning);
+
+  if (preferred.invalidCount < alternate.invalidCount) return preferred.decoded;
+  if (alternate.invalidCount < preferred.invalidCount) return alternate.decoded;
+  if (preferred.uniqueSampleCount >= alternate.uniqueSampleCount) return preferred.decoded;
+  return alternate.decoded;
+}
+
 export function parseLitematic(nbt) {
   const root = nbt.value;
   const meta = root['Metadata'] ?? root['metadata'];
@@ -132,7 +154,7 @@ export function parseLitematic(nbt) {
   const blocks = new Uint32Array(width * height * length); // all air by default
 
   // Detect format version for spanning vs non-spanning
-  const dataVersion = meta?.['MinecraftDataVersion'] ?? meta?.['DataVersion'] ?? 0;
+  const dataVersion = tagValue(meta?.['MinecraftDataVersion'] ?? meta?.['DataVersion'] ?? 0);
   const nonSpanning = dataVersion >= 2529; // 1.16+
 
   let decodedRegions = 0;
@@ -170,15 +192,7 @@ export function parseLitematic(nbt) {
     }
     let localBlocks;
     try {
-      localBlocks = unpackBlocks(blockStates, localPalette.length, totalBlocks, nonSpanning);
-      // Validate — if any index is out of range, try other format
-      let invalid = false;
-      for (let i = 0; i < Math.min(1000, totalBlocks); i++) {
-        if (localBlocks[i] >= localPalette.length) { invalid = true; break; }
-      }
-      if (invalid) {
-        localBlocks = unpackBlocks(blockStates, localPalette.length, totalBlocks, !nonSpanning);
-      }
+      localBlocks = decodeRegionBlocks(blockStates, localPalette.length, totalBlocks, nonSpanning);
     } catch (error) {
       throw new Error(`Unable to decode litematic region: ${error.message}`);
     }
