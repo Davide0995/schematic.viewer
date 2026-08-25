@@ -255,9 +255,29 @@ export class TextureManager {
     this._blockstates = new Map();
     this._models = new Map();
     this._fallbacks = new Map(); // blockName → THREE.Texture
+    this._resolveCalls = 0;
+    this._fallbackCalls = 0;
+    this._missingTextures = new Set();
     this._usingUserPack = false;
     this.loaded = false;
     this.ready = this.loadDefaultPack();
+  }
+
+  resetDiagnostics() {
+    this._resolveCalls = 0;
+    this._fallbackCalls = 0;
+    this._missingTextures.clear();
+  }
+
+  getDiagnostics() {
+    return {
+      usingUserPack: this._usingUserPack,
+      loaded: this.loaded,
+      rawTextureCount: this._raw.size,
+      resolveCalls: this._resolveCalls,
+      fallbackCalls: this._fallbackCalls,
+      missingTextures: Array.from(this._missingTextures).slice(0, 12),
+    };
   }
 
   async loadDefaultPack() {
@@ -355,8 +375,10 @@ export class TextureManager {
       tex = this._buildFromBitmap(exact, this._raw.get(exact));
     } else if (!this._usingUserPack) {
       // For the bundled partial pack, avoid collapsing unknown textures to stone-like aliases.
+      this._missingTextures.add(normalizedName);
       tex = nearestFilter(new THREE.CanvasTexture(colorCanvas(blockNameToColor(shortName))));
     } else {
+      this._missingTextures.add(normalizedName);
       tex = nearestFilter(new THREE.CanvasTexture(missingTextureCanvas()));
     }
     this._cache.set(texName, tex);
@@ -379,7 +401,14 @@ export class TextureManager {
 
   // Resolve a texture name to a THREE.Texture, using fallback color if needed
   resolve(texName, blockName) {
-    if (this.loaded) return this.getTexture(texName);
+    this._resolveCalls++;
+    if (this.loaded) {
+      const tex = this.getTexture(texName);
+      if (this._missingTextures.has(canonicalTextureId(texName))) this._fallbackCalls++;
+      return tex;
+    }
+    this._missingTextures.add(canonicalTextureId(texName));
+    this._fallbackCalls++;
     return this.getFallbackForBlock(blockName, texName);
   }
 
