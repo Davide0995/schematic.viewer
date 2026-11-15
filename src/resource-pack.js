@@ -148,6 +148,16 @@ export function resolveBlockModels(blockName, blockstates, models) {
   }).filter(Boolean);
 }
 
+/**
+ * Whether resolved block models fill their whole cell, so a neighbour's face against it can be hidden:
+ * some unrotated element spans 0..16 on every axis. Lanterns, paths, fences and plants do not.
+ */
+export function modelsFillCell(models) {
+  return models.some(model => (model?.elements ?? []).some(element => !element.rotation
+    && (element.from ?? [0, 0, 0]).every(value => value === 0)
+    && (element.to ?? [16, 16, 16]).every(value => value === 16)));
+}
+
 export function resolveBlockModel(blockName, blockstates, models) {
   return resolveBlockModels(blockName, blockstates, models)[0] ?? null;
 }
