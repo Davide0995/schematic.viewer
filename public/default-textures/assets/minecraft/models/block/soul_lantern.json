@@ -61,7 +61,7 @@
 		{
 			"from": [6.5, 10, 8],
 			"to": [9.5, 12, 8],
-			"shade": false,
+			"shade_direction_override": "up",
 			"rotation": {"angle": 45, "axis": "y", "origin": [8, 9, 8]},
 			"faces": {
 				"north": {"uv": [14, 1, 11, 3], "texture": "#1"},
@@ -75,7 +75,7 @@
 		{
 			"from": [8, 10, 6.5],
 			"to": [8, 12, 9.5],
-			"shade": false,
+			"shade_direction_override": "up",
 			"rotation": {"angle": 45, "axis": "y", "origin": [8, 9, 8]},
 			"faces": {
 				"east": {"uv": [11, 10, 14, 12], "texture": "#1"},
@@ -108,7 +108,7 @@
 			"name": "emissive",
 			"from": [5, 2, 5],
 			"to": [11, 6, 11],
-			"shade": false,
+			"shade_direction_override": "up",
 			"light_emission": 12,
 			"faces": {
 				"north": {"uv": [0, 3, 6, 7], "texture": "#3"},
