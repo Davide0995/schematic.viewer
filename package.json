@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "fflate": "^0.8.2",
-    "three": "^0.185.1"
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "playwright": "^1.62.1",
