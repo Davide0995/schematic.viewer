@@ -185,3 +185,8 @@ export function parseResourcePackJson(files) {
   }
   return { blockstates, models, packMeta };
 }
+
+export function resourcePackFormat(packMeta) {
+  const format = packMeta?.pack?.pack_format ?? packMeta?.pack?.min_format;
+  return Array.isArray(format) ? (format[0] ?? null) : (format ?? null);
+}

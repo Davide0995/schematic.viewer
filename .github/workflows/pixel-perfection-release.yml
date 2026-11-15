@@ -64,7 +64,7 @@ jobs:
                 `- **Current supported version:** ${current.minecraftVersion}`,
                 `- **Default pack:** ${current.source}`,
                 '',
-                'Review the Minecraft asset format and pack compatibility, update the bundled assets and `.github/pixel-perfection-release.json`, then run the parser tests and production build.',
+                'Review the Minecraft asset format and pack compatibility, update the bundled assets and `.github/minecraft-release.json`, then run the parser tests and production build.',
               ].join('\n'),
             });
             core.notice(`Opened issue #${issue.data.number} for Minecraft ${latest.id}.`);

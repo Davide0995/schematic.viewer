@@ -15,6 +15,7 @@ import {
   resolveBlockModel,
   resolveBlockModels,
   resolveModel,
+  resourcePackFormat,
   selectBlockState,
 } from '../src/resource-pack.js';
 
@@ -432,6 +433,12 @@ test('parses blockstates and models from resource-pack paths', () => {
   assert.equal(parsed.packMeta.pack.pack_format, 6);
   assert.equal(model.textures.all, 'minecraft:block/stone');
   assert.equal(model.elements[0].faces.up.texture, 'minecraft:block/stone');
+});
+
+test('reads legacy and split resource-pack format metadata', () => {
+  assert.equal(resourcePackFormat({ pack: { pack_format: 6 } }), 6);
+  assert.equal(resourcePackFormat({ pack: { min_format: [97, 1], max_format: [97, 1] } }), 97);
+  assert.equal(resourcePackFormat(null), null);
 });
 
 test('treats only air blocks as air, not stairs', () => {

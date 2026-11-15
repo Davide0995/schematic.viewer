@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { unzip } from 'fflate';
 import { blockNameToColor, getTextureTint } from './block-registry.js';
-import { parseResourcePackJson, resolveBlockModel, resolveBlockModels } from './resource-pack.js';
+import { parseResourcePackJson, resourcePackFormat, resolveBlockModel, resolveBlockModels } from './resource-pack.js';
 
 function nearestFilter(tex) {
   tex.magFilter = THREE.NearestFilter;
@@ -285,12 +285,11 @@ export class TextureManager {
   }
 
   getDiagnostics() {
-    const packFormat = this._packMeta?.pack?.pack_format;
     return {
       usingUserPack: this._usingUserPack,
       loaded: this.loaded,
       rawTextureCount: this._raw.size,
-      packFormat: Array.isArray(packFormat) ? packFormat[0] : (packFormat ?? null),
+      packFormat: resourcePackFormat(this._packMeta),
       resolveCalls: this._resolveCalls,
       fallbackCalls: this._fallbackCalls,
       missingTextures: Array.from(this._missingTextures).slice(0, 12),
