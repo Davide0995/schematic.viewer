@@ -14,8 +14,10 @@ A browser-based viewer for Minecraft `.litematic`, `.schematic`, and compatible 
 - Pixel Perfection Legacy 26.2 default resource pack under CC BY-SA 4.0, with optional user-provided Minecraft resource packs
 - Orbit, pan, zoom, and camera reset controls
 - Hidden-face culling for more efficient geometry
+- Resource-pack block models, variants, multipart states, rotations, and model face culling
 - Wireframe overlay and ground grid
 - Y-axis slicing for inspecting individual layers
+- Sign text labels from supported block-entity data
 - Runs entirely in the browser; files are not uploaded
 - Automatically tracks new stable Minecraft releases and opens a maintenance issue when one is published
 
@@ -63,11 +65,11 @@ npm run preview
 
 ## Known limitations
 
-- Rendering is an approximation, not a complete Minecraft client renderer.
-- Classic numeric block IDs have partial coverage.
+- Rendering is an approximation, not a complete Minecraft client renderer. Model rotations and culling are supported, but lighting, UV locking, tint colors, and some custom model behavior may differ from Minecraft.
+- Classic numeric block IDs have broad coverage for common blocks and colored variants, but unknown or modded IDs fall back to stone.
 - Some block states, orientations, custom blocks, fluids, and transparency effects may not match Minecraft exactly.
-- Entities, inventories, signs, banners, and other block-entity data are not currently rendered.
-- Very large files can require substantial browser memory and GPU resources.
+- Sign text is rendered as a readable label when present in block-entity data. Inventories, banners, entity models, and other block-entity visuals are not currently rendered.
+- Large files are decoded into an in-memory block array and meshed on the client. The renderer caches repeated block metadata, but very large files can still require substantial browser memory and GPU resources.
 - The bundled default pack is not made from Mojang assets. It is Pixel Perfection Legacy with attribution and license information in `public/default-textures/`. Users can load another resource pack for different styles or version-specific assets.
 - The bundled Pixel Perfection Legacy release targets Minecraft 26.2 and includes a 1.21.x overlay; older schematic IDs and states remain supported, while newer or modded blocks may still require a matching user pack.
 

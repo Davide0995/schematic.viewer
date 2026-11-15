@@ -115,6 +115,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 /* ── Canvas ── */
 #canvas-wrap { flex: 1; position: relative; overflow: hidden; }
 #main-canvas { width: 100%; height: 100%; display: block; }
+#block-tooltip {
+  position: absolute; z-index: 2; max-width: min(420px, calc(100% - 16px));
+  padding: 5px 8px; border: 1px solid var(--border); border-radius: 4px;
+  background: rgba(25, 25, 30, 0.94); color: var(--text); font: 11px monospace;
+  line-height: 1.35; overflow-wrap: anywhere; pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+#block-tooltip[hidden] { display: none; }
 
 #error-state {
   position: absolute; left: 50%; top: 24px; transform: translateX(-50%);

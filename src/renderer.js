@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { isOpaque, getBlockFaceTextures } from './block-registry.js';
 import { getBlockBoxes, boxToFaces } from './block-shapes.js';
+import { sourceBlockIndexForFace } from './hover.js';
 
 // Face definitions: [dx,dy,dz], vertex offsets, uv, AO brightness
 // Vertices in CCW order from outside the face
@@ -72,6 +73,10 @@ function modelNormal(normal, elementRotation, variantRotation) {
   return endpoint.map((value, index) => (value - origin[index]) / length);
 }
 
+function modelDirection(direction, variantRotation) {
+  return modelNormal(direction, null, variantRotation).map(value => Math.round(value));
+}
+
 function modelFaceUvs(face) {
   const [u0, v0, u1, v1] = face.uv ?? [0, 0, 16, 16];
   let uvs = [[u0 / 16, 1 - v1 / 16], [u1 / 16, 1 - v1 / 16], [u1 / 16, 1 - v0 / 16], [u0 / 16, 1 - v0 / 16]];
@@ -93,8 +98,15 @@ export class SchematicRenderer {
   constructor(canvas) {
     this.canvas = canvas;
     this._meshes = [];
+    this._blockEntityObjects = [];
     this._grid = null;
+    this._raycaster = new THREE.Raycaster();
+    this._pointer = new THREE.Vector2();
+    this._pointerPosition = null;
+    this._hoverFrame = 0;
+    this._isDragging = false;
     this._initScene();
+    this._initHover();
     this._animate();
   }
 
@@ -122,6 +134,11 @@ export class SchematicRenderer {
     this.controls.dampingFactor = 0.08;
     this.controls.screenSpacePanning = false;
     this.controls.maxDistance = 1500;
+    this.controls.addEventListener('start', () => {
+      this._isDragging = true;
+      this._hideBlockTooltip();
+    });
+    this.controls.addEventListener('end', () => { this._isDragging = false; });
 
     // Ambient + directional lighting
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
@@ -130,6 +147,63 @@ export class SchematicRenderer {
     this.scene.add(sun);
 
     window.addEventListener('resize', () => this._onResize());
+  }
+
+  _initHover() {
+    this.tooltip = document.getElementById('block-tooltip');
+    if (!this.tooltip) return;
+    this.canvas.addEventListener('pointermove', event => {
+      this._pointerPosition = { clientX: event.clientX, clientY: event.clientY };
+      if (!this._hoverFrame) this._hoverFrame = requestAnimationFrame(() => {
+        this._hoverFrame = 0;
+        this._updateBlockTooltip();
+      });
+    });
+    this.canvas.addEventListener('pointerleave', () => {
+      this._pointerPosition = null;
+      this._hideBlockTooltip();
+    });
+  }
+
+  _hideBlockTooltip() {
+    if (this.tooltip) this.tooltip.hidden = true;
+  }
+
+  _updateBlockTooltip() {
+    if (!this.tooltip || !this._pointerPosition || this._isDragging || !this._meshes.length) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const x = this._pointerPosition.clientX - rect.left;
+    const y = this._pointerPosition.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+      this._hideBlockTooltip();
+      return;
+    }
+
+    this._pointer.set((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1);
+    this._raycaster.setFromCamera(this._pointer, this.camera);
+    const hit = this._raycaster.intersectObjects(this._meshes, false)[0];
+    if (!hit) {
+      this._hideBlockTooltip();
+      return;
+    }
+
+    const sourceIndex = sourceBlockIndexForFace(hit.object.userData.sourceIndices, hit.faceIndex);
+    const data = hit.object.userData.schematicData;
+    const blockName = data && sourceIndex !== undefined ? data.palette[data.blocks[sourceIndex]] : null;
+    if (!blockName || blockName === 'minecraft:air') {
+      this._hideBlockTooltip();
+      return;
+    }
+
+    this.tooltip.textContent = blockName;
+    this.tooltip.hidden = false;
+    const parentRect = this.tooltip.parentElement.getBoundingClientRect();
+    const tooltipWidth = this.tooltip.offsetWidth;
+    const tooltipHeight = this.tooltip.offsetHeight;
+    const left = Math.max(0, Math.min(x + 14, parentRect.width - tooltipWidth));
+    const top = Math.max(0, Math.min(y + 14, parentRect.height - tooltipHeight));
+    this.tooltip.style.left = `${left}px`;
+    this.tooltip.style.top = `${top}px`;
   }
 
   _onResize() {
@@ -171,6 +245,7 @@ export class SchematicRenderer {
   }
 
   clearMeshes() {
+    this._hideBlockTooltip();
     for (const m of this._meshes) {
       this.scene.remove(m);
       m.geometry.dispose();
@@ -178,6 +253,54 @@ export class SchematicRenderer {
       else m.material.dispose();
     }
     this._meshes = [];
+    for (const object of this._blockEntityObjects) {
+      this.scene.remove(object);
+      object.material.map?.dispose();
+      object.material.dispose();
+    }
+    this._blockEntityObjects = [];
+  }
+
+  _addSignLabels(blockEntities = []) {
+    for (const entity of blockEntities) {
+      if (!String(entity.id).toLowerCase().includes('sign')) continue;
+      const data = entity.data ?? {};
+      const lines = [1, 2, 3, 4].map(index => data[`Text${index}`] ?? data[`text${index}`] ?? '')
+        .map(value => {
+          try {
+            const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+            return typeof parsed === 'object' ? parsed.text ?? '' : String(parsed ?? '');
+          } catch {
+            return String(value);
+          }
+        });
+      if (!lines.some(Boolean)) continue;
+
+      const labelCanvas = document.createElement('canvas');
+      labelCanvas.width = 256;
+      labelCanvas.height = 128;
+      const context = labelCanvas.getContext('2d');
+      context.font = '22px sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillStyle = '#fff8dc';
+      context.strokeStyle = '#2b2118';
+      context.lineWidth = 5;
+      lines.forEach((line, index) => {
+        const y = 18 + index * 30;
+        context.strokeText(line, 128, y);
+        context.fillText(line, 128, y);
+      });
+
+      const texture = new THREE.CanvasTexture(labelCanvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+      const sprite = new THREE.Sprite(material);
+      sprite.position.set(entity.x + 0.5, entity.y + 1.2, entity.z + 0.5);
+      sprite.scale.set(1.6, 0.8, 1);
+      this.scene.add(sprite);
+      this._blockEntityObjects.push(sprite);
+    }
   }
 
   /**
@@ -195,12 +318,26 @@ export class SchematicRenderer {
     // Group visible faces by their texture name
     // Each group: { texName, blockName, positions[], normals[], uvs[], indices[] }
     const groups = new Map(); // texName → group
+    const blockCache = new Map();
+
+    const getBlockRenderData = blockName => {
+      if (!blockCache.has(blockName)) {
+        const resourceModels = texMgr.getBlockModels?.(blockName) ?? [texMgr.getBlockModel?.(blockName)].filter(Boolean);
+        blockCache.set(blockName, {
+          opaque: isOpaque(blockName),
+          faceTextures: getBlockFaceTextures(blockName),
+          resourceModels,
+          boxes: resourceModels.some(model => model?.elements?.length) ? null : getBlockBoxes(blockName),
+        });
+      }
+      return blockCache.get(blockName);
+    };
 
     const ensureGroup = (texName, blockName) => {
       if (!groups.has(texName)) {
         groups.set(texName, {
           texName, blockName,
-          positions: [], normals: [], uvs: [], colors: [], indices: [],
+          positions: [], normals: [], uvs: [], colors: [], indices: [], sourceIndices: [],
           vertexCount: 0,
         });
       }
@@ -216,7 +353,7 @@ export class SchematicRenderer {
     const CHUNK = 50000; // blocks per frame yield
 
     // Helper: push one quad into the correct texture group
-    const addQuad = (texName, bName, bx, by, bz, quad) => {
+    const addQuad = (texName, bName, bx, by, bz, quad, sourceIndex) => {
       const group = ensureGroup(texName, bName);
       const base = group.vertexCount;
       const [nx, ny, nz] = quad.normal;
@@ -229,16 +366,24 @@ export class SchematicRenderer {
         group.colors.push(br, br, br);
       }
       for (const qi of QUAD_INDICES) group.indices.push(base + qi);
+      group.sourceIndices.push(sourceIndex);
       group.vertexCount += 4;
     };
 
-    const addModel = (model, bName, bx, by, bz) => {
+    const addModel = (model, bName, bx, by, bz, sourceIndex) => {
       for (const element of model.elements ?? []) {
         const [x0, y0, z0] = element.from ?? [0, 0, 0];
         const [x1, y1, z1] = element.to ?? [16, 16, 16];
         for (const [faceName, face] of Object.entries(element.faces ?? {})) {
           const template = MODEL_FACES[faceName];
           if (!template || !face.texture) continue;
+          if (cull && face.cullface) {
+            const cullTemplate = MODEL_FACES[face.cullface];
+            if (!cullTemplate) continue;
+            const [dx, dy, dz] = modelDirection(cullTemplate.dir, model.rotation);
+            const nb = getBlock(blocks, palette, bx + dx, by + dy, bz + dz, width, height, length);
+            if (isOpaque(nb)) continue;
+          }
           const verts = template.verts.map(([vx, vy, vz]) => modelPoint([
             vx ? x1 : x0,
             vy ? y1 : y0,
@@ -255,6 +400,7 @@ export class SchematicRenderer {
             group.colors.push(template.brightness, template.brightness, template.brightness);
           }
           for (const qi of QUAD_INDICES) group.indices.push(base + qi);
+          group.sourceIndices.push(sourceIndex);
           group.vertexCount += 4;
         }
       }
@@ -266,17 +412,17 @@ export class SchematicRenderer {
           processed++;
           const bName = palette[blocks[blockIdx(x, y, z, width, length)]];
           if (!bName || bName === 'minecraft:air') continue;
-          if (!isOpaque(bName) && bName.includes('air')) continue;
+          const renderData = getBlockRenderData(bName);
+          if (!renderData.opaque && bName.includes('air')) continue;
 
-          const faceTextures = getBlockFaceTextures(bName);
-          const resourceModels = texMgr.getBlockModels?.(bName) ?? [texMgr.getBlockModel?.(bName)].filter(Boolean);
+          const { faceTextures, resourceModels } = renderData;
           if (resourceModels.some(model => model?.elements?.length)) {
             for (const resourceModel of resourceModels) {
-              if (resourceModel?.elements?.length) addModel(resourceModel, bName, x, y, z);
+              if (resourceModel?.elements?.length) addModel(resourceModel, bName, x, y, z, blockIdx(x, y, z, width, length));
             }
             continue;
           }
-          const boxes = getBlockBoxes(bName);
+          const { boxes } = renderData;
 
           if (boxes) {
             // ── Non-cube block (slab, stair, carpet…) ──────────────
@@ -288,7 +434,7 @@ export class SchematicRenderer {
                   if (isOpaque(nb)) continue;
                 }
                 const texName = faceTextures[quad.faceName] ?? faceTextures.top;
-                addQuad(texName, bName, x, y, z, quad);
+                addQuad(texName, bName, x, y, z, quad, blockIdx(x, y, z, width, length));
               }
             }
           } else {
@@ -316,6 +462,7 @@ export class SchematicRenderer {
                 group.colors.push(br, br, br);
               }
               for (const qi of QUAD_INDICES) group.indices.push(base + qi);
+              group.sourceIndices.push(blockIdx(x, y, z, width, length));
               group.vertexCount += 4;
             }
           }
@@ -361,9 +508,13 @@ export class SchematicRenderer {
       }
 
       const mesh = new THREE.Mesh(geo, mat);
+      mesh.userData.sourceIndices = group.sourceIndices;
+      mesh.userData.schematicData = data;
       this.scene.add(mesh);
       this._meshes.push(mesh);
     }
+
+    this._addSignLabels(data.blockEntities);
 
     if (onProgress) onProgress(100);
     return this._meshes.length;

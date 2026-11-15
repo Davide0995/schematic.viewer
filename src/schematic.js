@@ -219,6 +219,21 @@ const LEGACY_NAMES = {
   217: 'minecraft:structure_void',
   218: 'minecraft:observer',
   219: 'minecraft:white_shulker_box',
+  220: 'minecraft:orange_shulker_box',
+  221: 'minecraft:magenta_shulker_box',
+  222: 'minecraft:light_blue_shulker_box',
+  223: 'minecraft:yellow_shulker_box',
+  224: 'minecraft:lime_shulker_box',
+  225: 'minecraft:pink_shulker_box',
+  226: 'minecraft:gray_shulker_box',
+  227: 'minecraft:light_gray_shulker_box',
+  228: 'minecraft:cyan_shulker_box',
+  229: 'minecraft:purple_shulker_box',
+  230: 'minecraft:blue_shulker_box',
+  231: 'minecraft:brown_shulker_box',
+  232: 'minecraft:green_shulker_box',
+  233: 'minecraft:red_shulker_box',
+  234: 'minecraft:black_shulker_box',
   235: 'minecraft:black_shulker_box',
   236: 'minecraft:white_concrete',
   237: 'minecraft:orange_concrete',
@@ -304,5 +319,13 @@ export function parseSchematic(nbt) {
     blocks[myIdx] = nameToIdx.get(name);
   }
 
-  return { width, height, length, palette, blocks };
+  const blockEntities = (root['TileEntities'] ?? root['BlockEntities'] ?? []).map(entity => ({
+    id: entity.id ?? entity.Id ?? '',
+    x: entity.x ?? entity.X,
+    y: entity.y ?? entity.Y,
+    z: entity.z ?? entity.Z,
+    data: entity,
+  })).filter(entity => [entity.x, entity.y, entity.z].every(Number.isInteger));
+
+  return { width, height, length, palette, blocks, blockEntities };
 }

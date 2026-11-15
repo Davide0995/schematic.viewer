@@ -221,5 +221,23 @@ export function parseLitematic(nbt) {
 
   if (decodedRegions === 0) throw new Error('Litematic has no decodable regions');
 
-  return { width, height, length, palette: globalPalette, blocks, dataVersion };
+  const blockEntities = [];
+  for (const { r } of allRegions) {
+    const entities = r['TileEntities'] ?? r['BlockEntities'] ?? [];
+    for (const entity of entities) {
+      const x = tagValue(entity.x ?? entity.X);
+      const y = tagValue(entity.y ?? entity.Y);
+      const z = tagValue(entity.z ?? entity.Z);
+      if (![x, y, z].every(Number.isInteger)) continue;
+      blockEntities.push({
+        id: tagValue(entity.id ?? entity.Id ?? ''),
+        x: x - minX,
+        y: y - minY,
+        z: z - minZ,
+        data: entity,
+      });
+    }
+  }
+
+  return { width, height, length, palette: globalPalette, blocks, dataVersion, blockEntities };
 }
