@@ -28,3 +28,5 @@ npm run build
 - Add regression tests for parser and decoder changes.
 - Do not commit `node_modules/`, `dist/`, resource packs, or copyrighted sample files.
 - Update `README.md` when supported formats, limitations, or user-facing behavior change.
+- Update `.github/minecraft-release.json` when the bundled Minecraft resource pack is refreshed.
+- The weekly release monitor in `.github/workflows/pixel-perfection-release.yml` tracks stable Mojang releases only.
