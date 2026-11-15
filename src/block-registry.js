@@ -2,7 +2,7 @@
 
 // Blocks that don't cull adjacent block faces (non-opaque)
 const NON_OPAQUE_PATTERNS = [
-  'air', 'water', 'lava', 'glass', 'leaves', '_door', '_slab', '_stairs',
+  'water', 'lava', 'glass', 'leaves', '_door', '_slab', '_stairs',
   '_fence', '_wall', '_bars', '_pane', 'torch', '_sign', 'banner', '_bed',
   '_button', '_pressure_plate', '_carpet', '_trapdoor', '_sapling', '_plant',
   'dandelion', 'poppy', 'orchid', 'allium', 'bluet', 'tulip', 'daisy',
@@ -14,8 +14,15 @@ const NON_OPAQUE_PATTERNS = [
   'chorus', 'grass', 'dead_bush', 'sunflower', 'rose_bush',
 ];
 
+// Air itself, matched exactly: a substring test would also catch st-air-s.
+const AIR_BLOCKS = new Set(['air', 'cave_air', 'void_air']);
+
+export function isAir(blockName) {
+  return !blockName || AIR_BLOCKS.has(blockName.replace('minecraft:', '').split('[')[0]);
+}
+
 export function isOpaque(blockName) {
-  if (!blockName || blockName === 'minecraft:air') return false;
+  if (isAir(blockName)) return false;
   const short = blockName.replace('minecraft:', '').split('[')[0];
   for (const p of NON_OPAQUE_PATTERNS) {
     if (short.includes(p)) return false;
