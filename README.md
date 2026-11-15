@@ -13,8 +13,8 @@ A browser-based viewer for Minecraft `.litematic`, `.schematic`, and compatible 
 - Load compatible `.nbt` files
 - Pixel Perfection Legacy 26.3 default resource pack under CC BY-SA 4.0, with optional user-provided Minecraft resource packs
 - Orbit, pan, zoom, and camera reset controls
-- Hidden-face culling for more efficient geometry
-- Resource-pack block models, variants, multipart states, rotations, and model face culling
+- Hidden-face culling recognizes `air`, `cave_air`, and `void_air`; resource-pack model geometry preserves visible faces around partial blocks
+- Resource-pack block models, variants, multipart states, x/y rotations, and model face culling
 - Wireframe overlay and ground grid
 - Y-axis slicing for inspecting individual layers
 - Sign text labels from supported block-entity data

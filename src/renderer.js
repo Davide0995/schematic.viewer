@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { isOpaque, getBlockFaceTextures } from './block-registry.js';
+import { isAir, isOpaque, getBlockFaceTextures } from './block-registry.js';
+import { modelsFillCell } from './resource-pack.js';
 import { getBlockBoxes, boxToFaces } from './block-shapes.js';
 import { sourceBlockIndexForFace } from './hover.js';
 
@@ -54,13 +55,15 @@ function rotateModelPoint(point, origin, axis, angle) {
   return [x * cos - y * sin + origin[0], x * sin + y * cos + origin[1], z + origin[2]];
 }
 
-function modelPoint(point, elementRotation, variantRotation) {
+// A blockstate variant turns its model clockwise as seen from the positive end of each axis (y: 90 takes east to south,
+// x: 270 takes north to up), x first and then y; rotateModelPoint turns the other way, hence the negated angles.
+export function modelPoint(point, elementRotation, variantRotation) {
   let result = point;
   if (elementRotation) {
     result = rotateModelPoint(result, elementRotation.origin ?? [8, 8, 8], elementRotation.axis, elementRotation.angle ?? 0);
   }
-  result = rotateModelPoint(result, [8, 8, 8], 'y', variantRotation.y ?? 0);
-  result = rotateModelPoint(result, [8, 8, 8], 'x', variantRotation.x ?? 0);
+  result = rotateModelPoint(result, [8, 8, 8], 'x', -(variantRotation.x ?? 0));
+  result = rotateModelPoint(result, [8, 8, 8], 'y', -(variantRotation.y ?? 0));
   return result.map(value => value / 16);
 }
 
@@ -323,15 +326,19 @@ export class SchematicRenderer {
     const getBlockRenderData = blockName => {
       if (!blockCache.has(blockName)) {
         const resourceModels = texMgr.getBlockModels?.(blockName) ?? [texMgr.getBlockModel?.(blockName)].filter(Boolean);
+        const hasModel = resourceModels.some(model => model?.elements?.length);
         blockCache.set(blockName, {
-          opaque: isOpaque(blockName),
+          // a block's own model, when the pack has one, says whether it fills its cell; the name list is the fallback
+          opaque: isOpaque(blockName) && (!hasModel || modelsFillCell(resourceModels)),
           faceTextures: getBlockFaceTextures(blockName),
           resourceModels,
-          boxes: resourceModels.some(model => model?.elements?.length) ? null : getBlockBoxes(blockName),
+          boxes: hasModel ? null : getBlockBoxes(blockName),
         });
       }
       return blockCache.get(blockName);
     };
+
+    const opaqueAt = (x, y, z) => getBlockRenderData(getBlock(blocks, palette, x, y, z, width, height, length)).opaque;
 
     const ensureGroup = (texName, blockName) => {
       if (!groups.has(texName)) {
@@ -381,8 +388,7 @@ export class SchematicRenderer {
             const cullTemplate = MODEL_FACES[face.cullface];
             if (!cullTemplate) continue;
             const [dx, dy, dz] = modelDirection(cullTemplate.dir, model.rotation);
-            const nb = getBlock(blocks, palette, bx + dx, by + dy, bz + dz, width, height, length);
-            if (isOpaque(nb)) continue;
+            if (opaqueAt(bx + dx, by + dy, bz + dz)) continue;
           }
           const verts = template.verts.map(([vx, vy, vz]) => modelPoint([
             vx ? x1 : x0,
@@ -411,9 +417,8 @@ export class SchematicRenderer {
         for (let x = 0; x < width; x++) {
           processed++;
           const bName = palette[blocks[blockIdx(x, y, z, width, length)]];
-          if (!bName || bName === 'minecraft:air') continue;
+          if (isAir(bName)) continue;
           const renderData = getBlockRenderData(bName);
-          if (!renderData.opaque && bName.includes('air')) continue;
 
           const { faceTextures, resourceModels } = renderData;
           if (resourceModels.some(model => model?.elements?.length)) {
@@ -430,8 +435,7 @@ export class SchematicRenderer {
               for (const quad of boxToFaces(box)) {
                 if (cull && quad.atBoundary) {
                   const [dx, dy, dz] = quad.normal;
-                  const nb = getBlock(blocks, palette, x+dx, y+dy, z+dz, width, height, length);
-                  if (isOpaque(nb)) continue;
+                  if (opaqueAt(x+dx, y+dy, z+dz)) continue;
                 }
                 const texName = faceTextures[quad.faceName] ?? faceTextures.top;
                 addQuad(texName, bName, x, y, z, quad, blockIdx(x, y, z, width, length));
@@ -445,8 +449,7 @@ export class SchematicRenderer {
               const [dx, dy, dz] = face.dir;
 
               if (cull) {
-                const nb = getBlock(blocks, palette, x+dx, y+dy, z+dz, width, height, length);
-                if (isOpaque(nb)) continue;
+                if (opaqueAt(x+dx, y+dy, z+dz)) continue;
               }
 
               const texName = faceTextures[faceNames[fi]] ?? faceTextures.top;

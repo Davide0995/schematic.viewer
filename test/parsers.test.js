@@ -5,11 +5,12 @@ import { parseNBT } from '../src/nbt.js';
 import { parseSchematic } from '../src/schematic.js';
 import { parseLitematic } from '../src/litematic.js';
 import { resolveTextureAlias } from '../src/texture-manager.js';
-import { getBlockFaceTextures } from '../src/block-registry.js';
+import { getBlockFaceTextures, isAir, isOpaque } from '../src/block-registry.js';
 import { getBlockBoxes } from '../src/block-shapes.js';
 import { sourceBlockIndexForFace } from '../src/hover.js';
 import {
   blockStateProperties,
+  modelsFillCell,
   parseResourcePackJson,
   resolveBlockModel,
   resolveBlockModels,
@@ -438,4 +439,41 @@ test('reads legacy and split resource-pack format metadata', () => {
   assert.equal(resourcePackFormat({ pack: { pack_format: 6 } }), 6);
   assert.equal(resourcePackFormat({ pack: { min_format: [97, 1], max_format: [97, 1] } }), 97);
   assert.equal(resourcePackFormat(null), null);
+});
+
+test('treats only air blocks as air, not stairs', () => {
+  assert.equal(isAir('minecraft:air'), true);
+  assert.equal(isAir('minecraft:cave_air'), true);
+  assert.equal(isAir('minecraft:void_air'), true);
+  assert.equal(isAir(undefined), true);
+  assert.equal(isAir('minecraft:oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]'), false);
+  assert.equal(isOpaque('minecraft:cave_air'), false);
+  assert.equal(isOpaque('minecraft:stone'), true);
+});
+
+test('a block counts as filling its cell only when its model has a whole unrotated cube', () => {
+  const cube = { elements: [{ from: [0, 0, 0], to: [16, 16, 16], faces: {} }] };
+  const lantern = { elements: [{ from: [5, 0, 5], to: [11, 7, 11], faces: {} }] };
+  const path = { elements: [{ from: [0, 0, 0], to: [16, 15, 16], faces: {} }] };
+  const tilted = { elements: [{ from: [0, 0, 0], to: [16, 16, 16], rotation: { angle: 22.5, axis: 'y', origin: [8, 8, 8] }, faces: {} }] };
+  assert.equal(modelsFillCell([cube]), true);
+  assert.equal(modelsFillCell([lantern]), false);
+  assert.equal(modelsFillCell([path]), false);
+  assert.equal(modelsFillCell([tilted]), false);
+  assert.equal(modelsFillCell([lantern, cube]), true);
+});
+
+test('turns blockstate variants the way the game does: y 90 east to south, x 270 north to up, x before y', async () => {
+  const { modelPoint } = await import('../src/renderer.js');
+  const near = (actual, expected) => actual.forEach((value, index) => assert.ok(Math.abs(value - expected[index]) < 1e-9, `${actual} vs ${expected}`));
+  // the east face's centre of a model
+  near(modelPoint([16, 8, 8], null, { y: 90 }), [0.5, 0.5, 1]);    // to the south
+  near(modelPoint([16, 8, 8], null, { y: 270 }), [0.5, 0.5, 0]);   // to the north
+  near(modelPoint([16, 8, 8], null, { y: 180 }), [0, 0.5, 0.5]);   // to the west
+  // the north face's centre (a piston's head)
+  near(modelPoint([8, 8, 0], null, { x: 270 }), [0.5, 1, 0.5]);    // facing up
+  near(modelPoint([8, 8, 0], null, { x: 90 }), [0.5, 0, 0.5]);     // facing down
+  near(modelPoint([8, 8, 0], null, { y: 90 }), [1, 0.5, 0.5]);     // facing east
+  // an upside-down stair facing north: the high step of the east-facing model, top half after x 180, then turned north
+  near(modelPoint([16, 16, 8], null, { x: 180, y: 270 }), [0.5, 0, 0]);
 });
