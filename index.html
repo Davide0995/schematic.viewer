@@ -3,49 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minecraft Schematic Viewer</title>
+  <meta name="description" content="Explore Minecraft builds in 3D. Open Litematica, WorldEdit, and compatible NBT schematics privately in your browser.">
+  <meta name="theme-color" content="#11161c">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <title>Schematic Viewer — Minecraft Build Inspector</title>
   <link rel="stylesheet" href="src/style.css">
 </head>
 <body>
   <div id="app">
-    <div id="sidebar">
+    <aside id="sidebar">
       <div id="logo">
-        <span class="logo-icon">⛏</span>
-        <span>Schematic Viewer</span>
+        <span class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M16 3.75 27 10v12L16 28.25 5 22V10l11-6.25Z" />
+            <path d="m5.5 10.25 10.5 6 10.5-6M16 16.25v11.5M10.5 7l11 6.25" />
+          </svg>
+        </span>
+        <span class="brand-copy">
+          <strong>Schematic Viewer</strong>
+          <span>BUILD INSPECTOR</span>
+        </span>
       </div>
 
-      <section class="panel">
-        <h3>Load File</h3>
+      <div class="sidebar-intro">
+        <p>Bring your next build into focus.</p>
+        <span>Explore every block in a private 3D workspace.</span>
+      </div>
+
+      <section class="panel" id="file-panel">
+        <h3><span class="section-index">01</span> Schematic</h3>
         <div class="drop-zone" id="schematic-drop">
           <input type="file" id="schematic-file" accept=".litematic,.schematic,.nbt" aria-label="Choose a schematic file">
           <label for="schematic-file">
-            <div class="drop-icon">📦</div>
-            <div class="drop-text">Drop or click to load</div>
-            <div class="drop-sub">.litematic · .schematic · .nbt</div>
+            <span class="drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 15V4m0 0L8 8m4-4 4 4M5 14v5h14v-5" />
+              </svg>
+            </span>
+            <span class="drop-text">Drop your file here</span>
+            <span class="drop-action">Browse files</span>
+            <span class="drop-sub">LITEMATIC · SCHEMATIC · NBT</span>
           </label>
         </div>
       </section>
 
-      <section class="panel">
-        <h3>Block Textures <span class="optional">optional</span></h3>
-        <div class="drop-zone" id="texture-drop">
+      <section class="panel" id="texture-panel">
+        <h3><span class="section-index">02</span> Resource pack <span class="optional">OPTIONAL</span></h3>
+        <div class="drop-zone texture-drop-zone" id="texture-drop">
           <input type="file" id="texture-pack" accept=".zip,.jar" aria-label="Choose a resource pack">
           <label for="texture-pack">
-            <div class="drop-icon">🎨</div>
-            <div class="drop-text">Drop resource pack</div>
-            <div class="drop-sub">.zip or Minecraft .jar</div>
+            <span class="texture-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 5.5h16v13H4zM4 10h16M9.5 5.5v4.25m5-4.25v4.25M8 14h.01M12 14h.01M16 14h.01M8 16.5h.01M12 16.5h.01M16 16.5h.01" />
+              </svg>
+            </span>
+            <span class="texture-copy">
+              <span class="drop-text">Add textures</span>
+              <span class="drop-sub">ZIP or Minecraft JAR</span>
+            </span>
+            <span class="texture-arrow" aria-hidden="true">+</span>
           </label>
         </div>
-        <div id="texture-status"></div>
+        <div id="texture-status" role="status" aria-live="polite"></div>
       </section>
 
       <section class="panel" id="info-panel" hidden>
-        <h3>Info</h3>
+        <h3><span class="section-index">03</span> Build details</h3>
         <div id="schematic-info"></div>
       </section>
 
-      <section class="panel">
-        <h3>Controls</h3>
+      <section class="panel" id="controls-panel">
+        <h3><span class="section-index">04</span> View settings</h3>
         <label class="toggle">
           <input type="checkbox" id="show-grid"> Show grid
         </label>
@@ -56,27 +84,50 @@
           <input type="checkbox" id="cull-faces" checked> Cull hidden faces
         </label>
         <div class="slider-row">
-          <span>Y min</span>
+          <label for="slice-y-min">Y min</label>
           <input type="range" id="slice-y-min" min="0" max="320" value="0" aria-label="Minimum Y layer">
           <span id="slice-y-min-val">0</span>
         </div>
         <div class="slider-row">
-          <span>Y max</span>
+          <label for="slice-y-max">Y max</label>
           <input type="range" id="slice-y-max" min="0" max="320" value="320" aria-label="Maximum Y layer">
           <span id="slice-y-max-val">320</span>
         </div>
-        <button id="rebuild-btn" disabled>Rebuild View</button>
+        <button id="rebuild-btn" disabled>Apply view settings</button>
       </section>
 
-      <section class="panel">
-        <h3>Camera</h3>
-        <button id="reset-camera">Reset Camera</button>
-        <div class="hint">LMB drag: rotate · RMB drag: pan · Scroll: zoom</div>
+      <section class="panel camera-panel">
+        <h3><span class="section-index">05</span> Camera</h3>
+        <button id="reset-camera">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4.2 8A6 6 0 1 1 4 11m.2-7v4h4" />
+          </svg>
+          Reset camera
+        </button>
+        <div class="hint">Drag to orbit <span>·</span> Right-drag to pan <span>·</span> Scroll to zoom</div>
       </section>
-    </div>
 
-    <div id="canvas-wrap">
+      <div class="sidebar-footer">
+        <span class="privacy-indicator" aria-hidden="true"></span>
+        Your files stay on this device
+      </div>
+    </aside>
+
+    <main id="canvas-wrap">
       <canvas id="main-canvas" role="img" aria-label="Three-dimensional schematic preview"></canvas>
+      <header class="workspace-header">
+        <div class="workspace-title">
+          <span>WORKSPACE</span>
+          <strong>3D Preview</strong>
+        </div>
+        <div class="local-badge">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="3" y="7" width="10" height="7" rx="1.5" />
+            <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+          </svg>
+          Processed locally
+        </div>
+      </header>
       <div id="block-tooltip" role="status" aria-live="polite" hidden></div>
       <div id="error-state" role="alert" aria-live="assertive" hidden></div>
       <div id="loading" role="status" aria-live="polite" hidden>
@@ -84,10 +135,29 @@
         <div id="loading-text">Loading…</div>
       </div>
       <div id="empty-state">
-        <div class="es-icon">🏗</div>
-        <div class="es-text">Load a schematic to begin</div>
+        <div class="empty-art" aria-hidden="true">
+          <svg viewBox="0 0 160 136" fill="none">
+            <path d="m80 13 54 31v62l-54 31-54-31V44l54-31Z" />
+            <path d="m26 44 54 31 54-31M80 75v62M53 29l54 31v31L53 60V29Z" />
+            <path d="m53 60 27-16 27 16" />
+            <path class="art-accent" d="m53 91 27 16 27-16M80 75l27-15" />
+            <circle class="art-dot" cx="80" cy="13" r="3" />
+            <circle class="art-dot" cx="26" cy="44" r="3" />
+            <circle class="art-dot" cx="134" cy="44" r="3" />
+          </svg>
+        </div>
+        <div class="empty-copy">
+          <span class="empty-kicker">YOUR BUILD, AT A GLANCE</span>
+          <h1>A new perspective<br>starts here.</h1>
+          <p>Load a schematic to explore its shape, layers, and details in 3D.</p>
+          <div class="preview-hints">
+            <span><kbd>Drag</kbd> Orbit</span>
+            <span><kbd>Right-drag</kbd> Pan</span>
+            <span><kbd>Scroll</kbd> Zoom</span>
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   </div>
   <script type="module" src="src/main.js"></script>
 </body>
