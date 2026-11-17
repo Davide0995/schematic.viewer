@@ -1,0 +1,8 @@
+node_modules/
+dist/
+public/default-textures/
+public/default-textures.zip
+.env
+.env.*
+playwright-report/
+test-results/

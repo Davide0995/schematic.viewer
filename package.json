@@ -20,14 +20,25 @@
     "dev": "vite",
     "test": "node --test",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src test browser-test vite.config.js eslint.config.js",
+    "format": "prettier --write src test browser-test index.html vite.config.js eslint.config.js",
+    "format:check": "prettier --check src test browser-test index.html vite.config.js eslint.config.js",
+    "test:browser": "node --test browser-test/smoke.js"
   },
   "dependencies": {
     "fflate": "^0.8.2",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
     "playwright": "^1.65.0",
+    "prettier": "^3.10.1",
     "vite": "^8.3.5"
+  },
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
   }
 }

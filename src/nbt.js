@@ -1,10 +1,28 @@
 import { gunzipSync } from 'fflate';
 
-const TAG = { END:0,BYTE:1,SHORT:2,INT:3,LONG:4,FLOAT:5,DOUBLE:6,BYTE_ARRAY:7,STRING:8,LIST:9,COMPOUND:10,INT_ARRAY:11,LONG_ARRAY:12 };
+const TAG = {
+  END: 0,
+  BYTE: 1,
+  SHORT: 2,
+  INT: 3,
+  LONG: 4,
+  FLOAT: 5,
+  DOUBLE: 6,
+  BYTE_ARRAY: 7,
+  STRING: 8,
+  LIST: 9,
+  COMPOUND: 10,
+  INT_ARRAY: 11,
+  LONG_ARRAY: 12,
+};
 
 class NBTReader {
   constructor(buf) {
-    this.view = new DataView(buf instanceof ArrayBuffer ? buf : buf.buffer, buf.byteOffset ?? 0, buf.byteLength);
+    this.view = new DataView(
+      buf instanceof ArrayBuffer ? buf : buf.buffer,
+      buf.byteOffset ?? 0,
+      buf.byteLength,
+    );
     this.pos = 0;
   }
   ensure(size) {
@@ -12,12 +30,38 @@ class NBTReader {
       throw new Error('Unexpected end of NBT data');
     }
   }
-  u8()  { this.ensure(1); return this.view.getUint8(this.pos++); }
-  i8()  { this.ensure(1); return this.view.getInt8(this.pos++); }
-  i16() { this.ensure(2); const v = this.view.getInt16(this.pos, false); this.pos += 2; return v; }
-  i32() { this.ensure(4); const v = this.view.getInt32(this.pos, false); this.pos += 4; return v; }
-  f32() { this.ensure(4); const v = this.view.getFloat32(this.pos, false); this.pos += 4; return v; }
-  f64() { this.ensure(8); const v = this.view.getFloat64(this.pos, false); this.pos += 8; return v; }
+  u8() {
+    this.ensure(1);
+    return this.view.getUint8(this.pos++);
+  }
+  i8() {
+    this.ensure(1);
+    return this.view.getInt8(this.pos++);
+  }
+  i16() {
+    this.ensure(2);
+    const v = this.view.getInt16(this.pos, false);
+    this.pos += 2;
+    return v;
+  }
+  i32() {
+    this.ensure(4);
+    const v = this.view.getInt32(this.pos, false);
+    this.pos += 4;
+    return v;
+  }
+  f32() {
+    this.ensure(4);
+    const v = this.view.getFloat32(this.pos, false);
+    this.pos += 4;
+    return v;
+  }
+  f64() {
+    this.ensure(8);
+    const v = this.view.getFloat64(this.pos, false);
+    this.pos += 8;
+    return v;
+  }
   i64() {
     this.ensure(8);
     const hi = this.view.getUint32(this.pos, false);
@@ -35,12 +79,18 @@ class NBTReader {
   }
   tag(type) {
     switch (type) {
-      case TAG.BYTE:       return this.i8();
-      case TAG.SHORT:      return this.i16();
-      case TAG.INT:        return this.i32();
-      case TAG.LONG:       return this.i64();
-      case TAG.FLOAT:      return this.f32();
-      case TAG.DOUBLE:     return this.f64();
+      case TAG.BYTE:
+        return this.i8();
+      case TAG.SHORT:
+        return this.i16();
+      case TAG.INT:
+        return this.i32();
+      case TAG.LONG:
+        return this.i64();
+      case TAG.FLOAT:
+        return this.f32();
+      case TAG.DOUBLE:
+        return this.f64();
       case TAG.BYTE_ARRAY: {
         const n = this.i32();
         this.ensure(n);
@@ -48,7 +98,8 @@ class NBTReader {
         this.pos += n;
         return a;
       }
-      case TAG.STRING:     return this.str();
+      case TAG.STRING:
+        return this.str();
       case TAG.LIST: {
         const itemType = this.u8();
         const len = this.i32();
@@ -83,14 +134,15 @@ class NBTReader {
         // Store as pairs of uint32 [hi0,lo0, hi1,lo1, ...]
         const a = new Uint32Array(n * 2);
         for (let i = 0; i < n; i++) {
-          a[i*2]   = this.view.getUint32(this.pos, false);
-          a[i*2+1] = this.view.getUint32(this.pos + 4, false);
+          a[i * 2] = this.view.getUint32(this.pos, false);
+          a[i * 2 + 1] = this.view.getUint32(this.pos + 4, false);
           this.pos += 8;
         }
         a._longCount = n;
         return a;
       }
-      default: throw new Error(`Unknown NBT tag type: ${type}`);
+      default:
+        throw new Error(`Unknown NBT tag type: ${type}`);
     }
   }
   parse() {

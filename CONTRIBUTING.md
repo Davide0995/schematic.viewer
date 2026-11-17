@@ -13,8 +13,14 @@ Before opening a pull request, run:
 
 ```bash
 npm test
+npx playwright install chromium
+npm run test:browser
+npm run lint
+npm run format:check
 npm run build
 ```
+
+Run `npm run format` to apply formatting to application and test files.
 
 ## Contribution workflow
 

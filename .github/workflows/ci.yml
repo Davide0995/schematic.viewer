@@ -23,5 +23,13 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm test
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Run browser smoke test
+        run: npm run test:browser
+      - name: Run lint
+        run: npm run lint
+      - name: Check formatting
+        run: npm run format:check
       - name: Build production bundle
         run: npm run build

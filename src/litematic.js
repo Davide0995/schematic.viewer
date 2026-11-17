@@ -9,7 +9,7 @@ function getBitsFromLongs(longs, longIndex, bitOffset, bits) {
   const hi = longs[hiIdx];
   const lo = longs[loIdx];
   // Extract bits from the 64-bit value (hi=upper 32, lo=lower 32)
-  const mask = bits === 32 ? 0xFFFFFFFF : (1 << bits) - 1;
+  const mask = bits === 32 ? 0xffffffff : (1 << bits) - 1;
   if (bitOffset < 32) {
     if (bitOffset + bits <= 32) {
       return (lo >>> bitOffset) & mask;
@@ -112,12 +112,16 @@ export function parseLitematic(nbt) {
   const regionNames = Object.keys(regions);
   const allRegions = [];
 
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
 
   for (const rName of regionNames) {
     const r = regions[rName];
-    const pos = r['Position'] ?? { x: {value:0}, y: {value:0}, z: {value:0} };
+    const pos = r['Position'] ?? { x: { value: 0 }, y: { value: 0 }, z: { value: 0 } };
     const size = r['Size'];
     if (!size) throw new Error('Litematic region has no size');
     const rx = tagValue(pos.x);
@@ -135,15 +139,30 @@ export function parseLitematic(nbt) {
     if (Math.abs(sx) * Math.abs(sy) * Math.abs(sz) > MAX_BLOCKS) {
       throw new Error('Litematic region is too large to load');
     }
-    const px = Math.min(rx, rx + sx); const ex = Math.max(rx, rx + sx);
-    const py = Math.min(ry, ry + sy); const ey = Math.max(ry, ry + sy);
-    const pz = Math.min(rz, rz + sz); const ez = Math.max(rz, rz + sz);
-    minX = Math.min(minX, px); minY = Math.min(minY, py); minZ = Math.min(minZ, pz);
-    maxX = Math.max(maxX, ex); maxY = Math.max(maxY, ey); maxZ = Math.max(maxZ, ez);
-    allRegions.push({ r, px, py, pz, sizeX: Math.abs(sx), sizeY: Math.abs(sy), sizeZ: Math.abs(sz) });
+    const px = Math.min(rx, rx + sx);
+    const ex = Math.max(rx, rx + sx);
+    const py = Math.min(ry, ry + sy);
+    const ey = Math.max(ry, ry + sy);
+    const pz = Math.min(rz, rz + sz);
+    const ez = Math.max(rz, rz + sz);
+    minX = Math.min(minX, px);
+    minY = Math.min(minY, py);
+    minZ = Math.min(minZ, pz);
+    maxX = Math.max(maxX, ex);
+    maxY = Math.max(maxY, ey);
+    maxZ = Math.max(maxZ, ez);
+    allRegions.push({
+      r,
+      px,
+      py,
+      pz,
+      sizeX: Math.abs(sx),
+      sizeY: Math.abs(sy),
+      sizeZ: Math.abs(sz),
+    });
   }
 
-  const width  = maxX - minX || 1;
+  const width = maxX - minX || 1;
   const height = maxY - minY || 1;
   const length = maxZ - minZ || 1;
   if (width * height * length > MAX_BLOCKS) throw new Error('Litematic is too large to load');
@@ -162,15 +181,18 @@ export function parseLitematic(nbt) {
     const palette = r['BlockStatePalette'] ?? r['Palette'] ?? [];
     const blockStates = r['BlockStates'];
     if (!blockStates) continue;
-    if (!Array.isArray(palette) || palette.length === 0) throw new Error('Litematic region has no palette');
+    if (!Array.isArray(palette) || palette.length === 0)
+      throw new Error('Litematic region has no palette');
 
     // Build local palette as block name strings
-    const localPalette = palette.map(entry => {
+    const localPalette = palette.map((entry) => {
       const name = entry['Name'] ?? 'minecraft:air';
       const props = entry['Properties'];
       if (!props) return name;
-      const propsStr = Object.entries(props).sort(([a],[b]) => a.localeCompare(b))
-        .map(([k,v]) => `${k}=${v}`).join(',');
+      const propsStr = Object.entries(props)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}=${v}`)
+        .join(',');
       return propsStr ? `${name}[${propsStr}]` : name;
     });
 
@@ -178,7 +200,10 @@ export function parseLitematic(nbt) {
     const localToGlobal = new Uint32Array(localPalette.length);
     for (let i = 0; i < localPalette.length; i++) {
       const s = localPalette[i];
-      if (!paletteMap.has(s)) { paletteMap.set(s, globalPalette.length); globalPalette.push(s); }
+      if (!paletteMap.has(s)) {
+        paletteMap.set(s, globalPalette.length);
+        globalPalette.push(s);
+      }
       localToGlobal[i] = paletteMap.get(s);
     }
 
@@ -186,7 +211,7 @@ export function parseLitematic(nbt) {
     const bitsPerEntry = Math.max(4, Math.max(2, Math.ceil(Math.log2(localPalette.length || 1))));
     const longsNeeded = nonSpanning
       ? Math.ceil(totalBlocks / Math.floor(64 / bitsPerEntry))
-      : Math.ceil(totalBlocks * bitsPerEntry / 64);
+      : Math.ceil((totalBlocks * bitsPerEntry) / 64);
     if (longCount(blockStates) < longsNeeded) {
       throw new Error(`Litematic region BlockStates is truncated (expected ${longsNeeded} longs)`);
     }
