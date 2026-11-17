@@ -256,21 +256,39 @@ const LEGACY_NAMES = {
 };
 
 const WOOD_TYPES = ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak'];
-const WOOL_COLORS = ['white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black'];
+const WOOL_COLORS = [
+  'white',
+  'orange',
+  'magenta',
+  'light_blue',
+  'yellow',
+  'lime',
+  'pink',
+  'gray',
+  'light_gray',
+  'cyan',
+  'purple',
+  'blue',
+  'brown',
+  'green',
+  'red',
+  'black',
+];
 const MAX_BLOCKS = 64 * 1024 * 1024;
 
 function legacyIdToName(id, data) {
   // Special data-dependent mappings
-  if (id === 5)  return `minecraft:${WOOD_TYPES[data & 7] || 'oak'}_planks`;
-  if (id === 6)  return `minecraft:${WOOD_TYPES[data & 7] || 'oak'}_sapling`;
+  if (id === 5) return `minecraft:${WOOD_TYPES[data & 7] || 'oak'}_planks`;
+  if (id === 6) return `minecraft:${WOOD_TYPES[data & 7] || 'oak'}_sapling`;
   if (id === 12) return data === 1 ? 'minecraft:red_sand' : 'minecraft:sand';
-  if (id === 17) return `minecraft:${['oak','spruce','birch','jungle'][(data & 3)] || 'oak'}_log`;
-  if (id === 18) return `minecraft:${['oak','spruce','birch','jungle'][(data & 3)] || 'oak'}_leaves`;
+  if (id === 17) return `minecraft:${['oak', 'spruce', 'birch', 'jungle'][data & 3] || 'oak'}_log`;
+  if (id === 18)
+    return `minecraft:${['oak', 'spruce', 'birch', 'jungle'][data & 3] || 'oak'}_leaves`;
   if (id === 35) return `minecraft:${WOOL_COLORS[data & 15] || 'white'}_wool`;
   if (id === 95) return `minecraft:${WOOL_COLORS[data & 15] || 'white'}_stained_glass`;
   if (id === 159) return `minecraft:${WOOL_COLORS[data & 15] || 'white'}_terracotta`;
   if (id === 160) return `minecraft:${WOOL_COLORS[data & 15] || 'white'}_stained_glass_pane`;
-  if (id === 162) return `minecraft:${['acacia','dark_oak'][(data & 1)] || 'acacia'}_log`;
+  if (id === 162) return `minecraft:${['acacia', 'dark_oak'][data & 1] || 'acacia'}_log`;
   if (id === 171) return `minecraft:${WOOL_COLORS[data & 15] || 'white'}_carpet`;
   if (id === 236) return `minecraft:${WOOL_COLORS[data & 15] || 'white'}_concrete`;
   if (id === 252) return `minecraft:${WOOL_COLORS[data & 15] || 'white'}_concrete_powder`;
@@ -279,14 +297,14 @@ function legacyIdToName(id, data) {
 
 export function parseSchematic(nbt) {
   const root = nbt.value;
-  const width  = root['Width'];
+  const width = root['Width'];
   const height = root['Height'];
   const length = root['Length'];
-  const blockIds   = root['Blocks'];   // Int8Array (byte array)
-  const blockData  = root['Data'];     // Int8Array (byte array)
+  const blockIds = root['Blocks']; // Int8Array (byte array)
+  const blockData = root['Data']; // Int8Array (byte array)
 
   if (!blockIds) throw new Error('No Blocks tag in schematic');
-  if (![width, height, length].every(value => Number.isInteger(value) && value > 0)) {
+  if (![width, height, length].every((value) => Number.isInteger(value) && value > 0)) {
     throw new Error('Invalid schematic dimensions');
   }
 
@@ -299,12 +317,15 @@ export function parseSchematic(nbt) {
   const blocks = new Uint32Array(total);
 
   for (let i = 0; i < total; i++) {
-    const id  = blockIds[i] & 0xFF;
-    const dat = blockData ? (blockData[i] & 0x0F) : 0;
+    const id = blockIds[i] & 0xff;
+    const dat = blockData ? blockData[i] & 0x0f : 0;
     if (id === 0) continue; // air
 
     const name = legacyIdToName(id, dat);
-    if (!nameToIdx.has(name)) { nameToIdx.set(name, palette.length); palette.push(name); }
+    if (!nameToIdx.has(name)) {
+      nameToIdx.set(name, palette.length);
+      palette.push(name);
+    }
 
     // .schematic index order: (y * length + z) * width + x
     // We want: x + z * width + y * width * length
@@ -319,13 +340,15 @@ export function parseSchematic(nbt) {
     blocks[myIdx] = nameToIdx.get(name);
   }
 
-  const blockEntities = (root['TileEntities'] ?? root['BlockEntities'] ?? []).map(entity => ({
-    id: entity.id ?? entity.Id ?? '',
-    x: entity.x ?? entity.X,
-    y: entity.y ?? entity.Y,
-    z: entity.z ?? entity.Z,
-    data: entity,
-  })).filter(entity => [entity.x, entity.y, entity.z].every(Number.isInteger));
+  const blockEntities = (root['TileEntities'] ?? root['BlockEntities'] ?? [])
+    .map((entity) => ({
+      id: entity.id ?? entity.Id ?? '',
+      x: entity.x ?? entity.X,
+      y: entity.y ?? entity.Y,
+      z: entity.z ?? entity.Z,
+      data: entity,
+    }))
+    .filter((entity) => [entity.x, entity.y, entity.z].every(Number.isInteger));
 
   return { width, height, length, palette, blocks, blockEntities };
 }

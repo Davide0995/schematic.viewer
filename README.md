@@ -30,12 +30,18 @@ A browser-based viewer for Minecraft `.litematic`, `.schematic`, and compatible 
 
 ## Local development
 
-Requires Node.js 18 or newer.
+Requires Node.js 20.19 or newer in the 20.x series, 22.13 or newer in the 22.x series,
+or Node.js 24 or newer.
 
 ```bash
 npm install
 npm run dev
 ```
+
+Run `npm test`, `npm run lint`, `npm run format:check`, and `npm run build` before submitting
+changes. Install Chromium with `npx playwright install chromium`, then run `npm run test:browser`
+for the browser smoke test. Use `npm run format` to apply the project's formatting. See
+[ARCHITECTURE.md](ARCHITECTURE.md) for the application data flow.
 
 The included default pack is Pixel Perfection Legacy for Minecraft 26.3, a complete 16x resource pack distributed under CC BY-SA 4.0. Its 1.21.x compatibility overlay covers older files such as your 1.21.11 schematic. Its license and attribution are documented in [public/default-textures/ATTRIBUTION.md](public/default-textures/ATTRIBUTION.md). User-provided packs override it for the current browser session.
 
@@ -87,4 +93,6 @@ Bug reports, compatibility fixtures, documentation improvements, and focused pul
 
 ## License
 
-The source code is available under the [MIT License](LICENSE). Third-party dependencies and user-supplied resource packs remain subject to their own licenses.
+The source code is available under the [MIT License](LICENSE). The bundled default pack is subject
+to its own [license and attribution](public/default-textures/ATTRIBUTION.md); third-party
+dependencies and user-supplied resource packs remain subject to their own licenses.

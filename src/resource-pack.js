@@ -6,15 +6,17 @@ function normalizeId(value, fallbackNamespace = 'minecraft') {
 export function blockStateProperties(blockName) {
   const match = blockName.match(/\[([^\]]*)\]/);
   if (!match) return {};
-  return Object.fromEntries(match[1].split(',').map(pair => {
-    const separator = pair.indexOf('=');
-    return separator === -1 ? [pair, ''] : [pair.slice(0, separator), pair.slice(separator + 1)];
-  }));
+  return Object.fromEntries(
+    match[1].split(',').map((pair) => {
+      const separator = pair.indexOf('=');
+      return separator === -1 ? [pair, ''] : [pair.slice(0, separator), pair.slice(separator + 1)];
+    }),
+  );
 }
 
 function variantMatches(key, properties) {
   if (!key) return true;
-  return key.split(',').every(condition => {
+  return key.split(',').every((condition) => {
     const separator = condition.indexOf('=');
     if (separator === -1) return false;
     const name = condition.slice(0, separator);
@@ -30,9 +32,11 @@ function conditionMatches(name, expectedValue, properties) {
 
 function multipartMatches(when, properties) {
   if (!when) return true;
-  if (Array.isArray(when.OR)) return when.OR.some(part => multipartMatches(part, properties));
-  if (Array.isArray(when.AND)) return when.AND.every(part => multipartMatches(part, properties));
-  return Object.entries(when).every(([name, expectedValue]) => conditionMatches(name, expectedValue, properties));
+  if (Array.isArray(when.OR)) return when.OR.some((part) => multipartMatches(part, properties));
+  if (Array.isArray(when.AND)) return when.AND.every((part) => multipartMatches(part, properties));
+  return Object.entries(when).every(([name, expectedValue]) =>
+    conditionMatches(name, expectedValue, properties),
+  );
 }
 
 export function selectBlockState(blockName, blockstates) {
@@ -44,7 +48,10 @@ export function selectBlockState(blockName, blockstates) {
   if (state.variants) {
     const candidates = Object.entries(state.variants)
       .filter(([key]) => variantMatches(key, properties))
-      .sort(([left], [right]) => (right ? right.split(',').length : 0) - (left ? left.split(',').length : 0));
+      .sort(
+        ([left], [right]) =>
+          (right ? right.split(',').length : 0) - (left ? left.split(',').length : 0),
+      );
     if (!candidates.length) return null;
     const value = candidates[0][1];
     return (Array.isArray(value) ? value : [value]).filter(Boolean);
@@ -70,28 +77,74 @@ function mergeModel(parent, child) {
   };
 }
 
-const CUBE_ELEMENTS = [{
-  from: [0, 0, 0], to: [16, 16, 16],
-  faces: {
-    down: { texture: '#down' }, up: { texture: '#up' },
-    north: { texture: '#north' }, south: { texture: '#south' },
-    west: { texture: '#west' }, east: { texture: '#east' },
+const CUBE_ELEMENTS = [
+  {
+    from: [0, 0, 0],
+    to: [16, 16, 16],
+    faces: {
+      down: { texture: '#down' },
+      up: { texture: '#up' },
+      north: { texture: '#north' },
+      south: { texture: '#south' },
+      west: { texture: '#west' },
+      east: { texture: '#east' },
+    },
   },
-}];
+];
 
 function vanillaParentModel(modelId) {
   const parent = modelId.split(':')[1]?.replace(/^block\//, '');
   if (parent === 'cube_all') {
-    return { elements: CUBE_ELEMENTS, textures: { down: '#all', up: '#all', north: '#all', south: '#all', west: '#all', east: '#all' } };
+    return {
+      elements: CUBE_ELEMENTS,
+      textures: {
+        down: '#all',
+        up: '#all',
+        north: '#all',
+        south: '#all',
+        west: '#all',
+        east: '#all',
+      },
+    };
   }
   if (parent === 'cube_bottom_top') {
-    return { elements: CUBE_ELEMENTS, textures: { down: '#bottom', up: '#top', north: '#side', south: '#side', west: '#side', east: '#side' } };
+    return {
+      elements: CUBE_ELEMENTS,
+      textures: {
+        down: '#bottom',
+        up: '#top',
+        north: '#side',
+        south: '#side',
+        west: '#side',
+        east: '#side',
+      },
+    };
   }
   if (parent === 'cube_column') {
-    return { elements: CUBE_ELEMENTS, textures: { down: '#end', up: '#end', north: '#side', south: '#side', west: '#side', east: '#side' } };
+    return {
+      elements: CUBE_ELEMENTS,
+      textures: {
+        down: '#end',
+        up: '#end',
+        north: '#side',
+        south: '#side',
+        west: '#side',
+        east: '#side',
+      },
+    };
   }
   if (parent === 'cube_column_horizontal') {
-    return { elements: CUBE_ELEMENTS, textures: { down: '#side', up: '#side', north: '#end', south: '#end', west: '#side', east: '#side' } };
+    return {
+      elements: CUBE_ELEMENTS,
+      textures: {
+        down: '#side',
+        up: '#side',
+        north: '#end',
+        south: '#end',
+        west: '#side',
+        east: '#side',
+      },
+    };
   }
   return null;
 }
@@ -118,10 +171,12 @@ export function resolveModel(modelName, models, seen = new Set()) {
   let parent = null;
   if (model.parent) parent = resolveModel(model.parent, models, seen);
   const resolved = mergeModel(parent, model);
-  resolved.textures = Object.fromEntries(Object.entries(resolved.textures).map(([key, value]) => [
-    key,
-    resolveTextureReference(value, resolved.textures) ?? value,
-  ]));
+  resolved.textures = Object.fromEntries(
+    Object.entries(resolved.textures).map(([key, value]) => [
+      key,
+      resolveTextureReference(value, resolved.textures) ?? value,
+    ]),
+  );
   return resolved;
 }
 
@@ -129,23 +184,30 @@ export function resolveBlockModels(blockName, blockstates, models) {
   const choices = selectBlockState(blockName, blockstates);
   if (!choices?.length) return [];
 
-  return choices.map(choice => {
-    const model = resolveModel(choice.model, models);
-    if (!model) return null;
-    const elements = (model.elements ?? []).map(element => ({
-      ...element,
-      faces: Object.fromEntries(Object.entries(element.faces ?? {}).map(([faceName, face]) => [
-        faceName,
-        { ...face, texture: resolveTextureReference(face.texture, model.textures) ?? face.texture },
-      ])),
-    }));
-    return {
-      ...model,
-      elements,
-      rotation: { x: choice.x ?? 0, y: choice.y ?? 0 },
-      uvlock: Boolean(choice.uvlock),
-    };
-  }).filter(Boolean);
+  return choices
+    .map((choice) => {
+      const model = resolveModel(choice.model, models);
+      if (!model) return null;
+      const elements = (model.elements ?? []).map((element) => ({
+        ...element,
+        faces: Object.fromEntries(
+          Object.entries(element.faces ?? {}).map(([faceName, face]) => [
+            faceName,
+            {
+              ...face,
+              texture: resolveTextureReference(face.texture, model.textures) ?? face.texture,
+            },
+          ]),
+        ),
+      }));
+      return {
+        ...model,
+        elements,
+        rotation: { x: choice.x ?? 0, y: choice.y ?? 0 },
+        uvlock: Boolean(choice.uvlock),
+      };
+    })
+    .filter(Boolean);
 }
 
 /**
@@ -153,9 +215,14 @@ export function resolveBlockModels(blockName, blockstates, models) {
  * some unrotated element spans 0..16 on every axis. Lanterns, paths, fences and plants do not.
  */
 export function modelsFillCell(models) {
-  return models.some(model => (model?.elements ?? []).some(element => !element.rotation
-    && (element.from ?? [0, 0, 0]).every(value => value === 0)
-    && (element.to ?? [16, 16, 16]).every(value => value === 16)));
+  return models.some((model) =>
+    (model?.elements ?? []).some(
+      (element) =>
+        !element.rotation &&
+        (element.from ?? [0, 0, 0]).every((value) => value === 0) &&
+        (element.to ?? [16, 16, 16]).every((value) => value === 16),
+    ),
+  );
 }
 
 export function resolveBlockModel(blockName, blockstates, models) {
@@ -170,7 +237,9 @@ export function parseResourcePackJson(files) {
 
   for (const [path, data] of Object.entries(files)) {
     if (path === 'pack.mcmeta') {
-      try { packMeta = JSON.parse(decoder.decode(data)); } catch {}
+      try {
+        packMeta = JSON.parse(decoder.decode(data));
+      } catch {}
       continue;
     }
     const match = path.match(/^assets\/([^/]+)\/(blockstates|models)\/(.+)\.json$/);

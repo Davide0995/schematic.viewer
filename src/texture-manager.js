@@ -1,7 +1,12 @@
 import * as THREE from 'three';
 import { unzip } from 'fflate';
 import { blockNameToColor, getTextureTint } from './block-registry.js';
-import { parseResourcePackJson, resourcePackFormat, resolveBlockModel, resolveBlockModels } from './resource-pack.js';
+import {
+  parseResourcePackJson,
+  resourcePackFormat,
+  resolveBlockModel,
+  resolveBlockModels,
+} from './resource-pack.js';
 
 function nearestFilter(tex) {
   tex.magFilter = THREE.NearestFilter;
@@ -16,7 +21,7 @@ async function blobToImageBitmap(blob) {
 
 function applyTint(imageBitmap, tint) {
   const canvas = document.createElement('canvas');
-  canvas.width  = imageBitmap.width;
+  canvas.width = imageBitmap.width;
   canvas.height = imageBitmap.height;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(imageBitmap, 0, 0);
@@ -24,17 +29,18 @@ function applyTint(imageBitmap, tint) {
   const d = imageData.data;
   const [tr, tg, tb] = tint;
   for (let i = 0; i < d.length; i += 4) {
-    d[i]   = Math.round(d[i]   * tr);
-    d[i+1] = Math.round(d[i+1] * tg);
-    d[i+2] = Math.round(d[i+2] * tb);
+    d[i] = Math.round(d[i] * tr);
+    d[i + 1] = Math.round(d[i + 1] * tg);
+    d[i + 2] = Math.round(d[i + 2] * tb);
   }
   ctx.putImageData(imageData, 0, 0);
   return canvas;
 }
 
-function colorCanvas(color, w=16, h=16) {
+function colorCanvas(color, w = 16, h = 16) {
   const c = document.createElement('canvas');
-  c.width = w; c.height = h;
+  c.width = w;
+  c.height = h;
   const ctx = c.getContext('2d');
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, w, h);
@@ -43,14 +49,15 @@ function colorCanvas(color, w=16, h=16) {
   ctx.fillRect(0, 0, w, 1);
   ctx.fillRect(0, 0, 1, h);
   ctx.fillStyle = 'rgba(255,255,255,0.06)';
-  ctx.fillRect(w-1, 0, 1, h);
-  ctx.fillRect(0, h-1, w, 1);
+  ctx.fillRect(w - 1, 0, 1, h);
+  ctx.fillRect(0, h - 1, w, 1);
   return c;
 }
 
 function missingTextureCanvas(w = 16, h = 16) {
   const c = document.createElement('canvas');
-  c.width = w; c.height = h;
+  c.width = w;
+  c.height = h;
   const ctx = c.getContext('2d');
   const halfW = Math.max(1, Math.floor(w / 2));
   const halfH = Math.max(1, Math.floor(h / 2));
@@ -129,13 +136,8 @@ const TEXTURE_ALIASES = {
   polished_deepslate: 'deepslate',
   blackstone: 'deepslate',
   polished_blackstone: 'deepslate',
-  netherrack: 'stone',
   nether_bricks: 'stone_bricks',
   red_nether_bricks: 'bricks',
-  quartz_block: 'stone',
-  quartz_block_top: 'stone',
-  quartz_block_side: 'stone',
-  quartz_block_bottom: 'stone',
   prismarine: 'stone',
   prismarine_bricks: 'stone_bricks',
   dark_prismarine: 'deepslate',
@@ -192,16 +194,24 @@ export function resolveTextureAlias(texName) {
   if (TEXTURE_ALIASES[base]) return TEXTURE_ALIASES[base];
 
   const colorAliases = {
-    black: 'black_stained_glass', gray: 'black_stained_glass',
-    light_gray: 'white_stained_glass', white: 'white_stained_glass',
-    brown: 'red_stained_glass', red: 'red_stained_glass',
-    orange: 'red_stained_glass', pink: 'red_stained_glass',
-    yellow: 'yellow_stained_glass', lime: 'green_stained_glass',
-    green: 'green_stained_glass', cyan: 'blue_stained_glass',
-    light_blue: 'blue_stained_glass', blue: 'blue_stained_glass',
-    purple: 'purple_stained_glass', magenta: 'purple_stained_glass',
+    black: 'black_stained_glass',
+    gray: 'black_stained_glass',
+    light_gray: 'white_stained_glass',
+    white: 'white_stained_glass',
+    brown: 'red_stained_glass',
+    red: 'red_stained_glass',
+    orange: 'red_stained_glass',
+    pink: 'red_stained_glass',
+    yellow: 'yellow_stained_glass',
+    lime: 'green_stained_glass',
+    green: 'green_stained_glass',
+    cyan: 'blue_stained_glass',
+    light_blue: 'blue_stained_glass',
+    blue: 'blue_stained_glass',
+    purple: 'purple_stained_glass',
+    magenta: 'purple_stained_glass',
   };
-  const color = Object.keys(colorAliases).find(name => base.startsWith(`${name}_`));
+  const color = Object.keys(colorAliases).find((name) => base.startsWith(`${name}_`));
   if (color && /(wool|concrete|terracotta|carpet|glass|glazed_terracotta)/.test(base)) {
     return colorAliases[color];
   }
@@ -265,7 +275,7 @@ function textureCandidates(texName) {
 export class TextureManager {
   constructor() {
     this._cache = new Map(); // texName → THREE.Texture
-    this._raw   = new Map(); // texName → ImageBitmap (from pack)
+    this._raw = new Map(); // texName → ImageBitmap (from pack)
     this._blockstates = new Map();
     this._models = new Map();
     this._packMeta = null;
@@ -309,10 +319,13 @@ export class TextureManager {
   async _readZip(bytes) {
     return new Promise((resolve, reject) => {
       unzip(bytes, (err, files) => {
-        if (err) { reject(err); return; }
+        if (err) {
+          reject(err);
+          return;
+        }
 
         const entries = Object.entries(files).filter(([name]) =>
-          /^assets\/[^/]+\/textures\/(?:block|blocks)\/.+\.png$/i.test(name)
+          /^assets\/[^/]+\/textures\/(?:block|blocks)\/.+\.png$/i.test(name),
         );
         const promises = entries.map(async ([path, data]) => {
           const match = path.match(/^assets\/([^/]+)\/textures\/(?:block|blocks)\/(.+)\.png$/i);
@@ -371,7 +384,8 @@ export class TextureManager {
       const size = bitmap.width; // should be 16 (or 32, 64...)
       if (bitmap.height > size) {
         const c = document.createElement('canvas');
-        c.width = size; c.height = size;
+        c.width = size;
+        c.height = size;
         c.getContext('2d').drawImage(bitmap, 0, 0, size, size, 0, 0, size, size);
         source = c;
       } else {
@@ -386,8 +400,11 @@ export class TextureManager {
     if (this._cache.has(texName)) return this._cache.get(texName);
 
     let tex;
-    const [normalizedName, shortName] = [canonicalTextureId(texName), canonicalTextureId(texName).split(':')[1]];
-    const exact = textureCandidates(normalizedName).find(candidate => this._raw.has(candidate));
+    const [normalizedName, shortName] = [
+      canonicalTextureId(texName),
+      canonicalTextureId(texName).split(':')[1],
+    ];
+    const exact = textureCandidates(normalizedName).find((candidate) => this._raw.has(candidate));
     if (exact) {
       tex = this._buildFromBitmap(exact, this._raw.get(exact));
     } else if (!this._usingUserPack) {

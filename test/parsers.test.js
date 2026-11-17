@@ -64,7 +64,9 @@ function compoundRoot(...tags) {
 
 function blockStateLongs(...lowWords) {
   const words = new Uint32Array(lowWords.length * 2);
-  lowWords.forEach((lowWord, index) => { words[index * 2 + 1] = lowWord; });
+  lowWords.forEach((lowWord, index) => {
+    words[index * 2 + 1] = lowWord;
+  });
   return words;
 }
 
@@ -80,17 +82,14 @@ function litematicRegion({ position = { x: 0, y: 0, z: 0 }, size, palette, block
 test('maps both triangles of an emitted quad to its source block', () => {
   const sourceIndices = [4, 19, 27];
   assert.deepEqual(
-    [0, 1, 2, 3, 4, 5].map(faceIndex => sourceBlockIndexForFace(sourceIndices, faceIndex)),
+    [0, 1, 2, 3, 4, 5].map((faceIndex) => sourceBlockIndexForFace(sourceIndices, faceIndex)),
     [4, 4, 19, 19, 27, 27],
   );
   assert.equal(sourceBlockIndexForFace(sourceIndices, -1), undefined);
 });
 
 test('parses primitive NBT tags from an uncompressed compound', () => {
-  const input = compoundRoot(
-    intTag('Count', 42),
-    stringTag('Name', 'test-structure'),
-  );
+  const input = compoundRoot(intTag('Count', 42), stringTag('Name', 'test-structure'));
 
   const result = parseNBT(input);
 
@@ -150,10 +149,15 @@ test('preserves classic schematic block entities with normalized coordinates', (
     },
   });
 
-  assert.deepEqual(result.blockEntities, [{
-    id: 'Sign', x: 0, y: 0, z: 0,
-    data: { id: 'Sign', x: 0, y: 0, z: 0, Text1: 'Hello' },
-  }]);
+  assert.deepEqual(result.blockEntities, [
+    {
+      id: 'Sign',
+      x: 0,
+      y: 0,
+      z: 0,
+      data: { id: 'Sign', x: 0, y: 0, z: 0, Text1: 'Hello' },
+    },
+  ]);
 });
 
 test('maps legacy colored shulker IDs instead of falling back to stone', () => {
@@ -272,19 +276,23 @@ test('rejects litematics without regions', () => {
 });
 
 test('rejects litematic regions with truncated block states', () => {
-  assert.throws(() => parseLitematic({
-    value: {
-      Metadata: { MinecraftDataVersion: 3000 },
-      Regions: {
-        Main: {
-          Position: { x: 0, y: 0, z: 0 },
-          Size: { x: 2, y: 1, z: 2 },
-          BlockStatePalette: [{ Name: 'minecraft:air' }, { Name: 'minecraft:stone' }],
-          BlockStates: new Uint32Array(0),
+  assert.throws(
+    () =>
+      parseLitematic({
+        value: {
+          Metadata: { MinecraftDataVersion: 3000 },
+          Regions: {
+            Main: {
+              Position: { x: 0, y: 0, z: 0 },
+              Size: { x: 2, y: 1, z: 2 },
+              BlockStatePalette: [{ Name: 'minecraft:air' }, { Name: 'minecraft:stone' }],
+              BlockStates: new Uint32Array(0),
+            },
+          },
         },
-      },
-    },
-  }), /BlockStates is truncated/);
+      }),
+    /BlockStates is truncated/,
+  );
 });
 
 test('decodes pre-1.16 spanning litematic entries', () => {
@@ -358,13 +366,18 @@ test('covers redstone and utility blocks in the bundled texture checklist', () =
 });
 
 test('selects resource-pack blockstate variants by block properties', () => {
-  const blockstates = new Map([['minecraft:test_block', {
-    variants: {
-      'facing=north': { model: 'minecraft:block/north' },
-      'facing=east': { model: 'minecraft:block/east', y: 90 },
-      '': { model: 'minecraft:block/default' },
-    },
-  }]]);
+  const blockstates = new Map([
+    [
+      'minecraft:test_block',
+      {
+        variants: {
+          'facing=north': { model: 'minecraft:block/north' },
+          'facing=east': { model: 'minecraft:block/east', y: 90 },
+          '': { model: 'minecraft:block/default' },
+        },
+      },
+    ],
+  ]);
 
   assert.deepEqual(blockStateProperties('minecraft:test_block[facing=east]'), { facing: 'east' });
   assert.deepEqual(selectBlockState('minecraft:test_block[facing=east]', blockstates), [
@@ -373,14 +386,25 @@ test('selects resource-pack blockstate variants by block properties', () => {
 });
 
 test('selects multipart blockstate models by conditions', () => {
-  const blockstates = new Map([['minecraft:test_fence', {
-    multipart: [
-      { apply: { model: 'minecraft:block/post' } },
-      { when: { north: 'true' }, apply: { model: 'minecraft:block/north' } },
-      { when: { OR: [{ east: 'true' }, { west: 'true' }] }, apply: { model: 'minecraft:block/side' } },
-      { when: { AND: [{ waterlogged: 'false' }, { south: 'true' }] }, apply: { model: 'minecraft:block/south' } },
+  const blockstates = new Map([
+    [
+      'minecraft:test_fence',
+      {
+        multipart: [
+          { apply: { model: 'minecraft:block/post' } },
+          { when: { north: 'true' }, apply: { model: 'minecraft:block/north' } },
+          {
+            when: { OR: [{ east: 'true' }, { west: 'true' }] },
+            apply: { model: 'minecraft:block/side' },
+          },
+          {
+            when: { AND: [{ waterlogged: 'false' }, { south: 'true' }] },
+            apply: { model: 'minecraft:block/south' },
+          },
+        ],
+      },
     ],
-  }]]);
+  ]);
 
   const models = new Map([
     ['minecraft:block/post', { elements: [] }],
@@ -389,14 +413,27 @@ test('selects multipart blockstate models by conditions', () => {
     ['minecraft:block/south', { elements: [] }],
   ]);
 
-  const selected = resolveBlockModels('minecraft:test_fence[north=true,east=true,south=true,waterlogged=false]', blockstates, models);
+  const selected = resolveBlockModels(
+    'minecraft:test_fence[north=true,east=true,south=true,waterlogged=false]',
+    blockstates,
+    models,
+  );
   assert.equal(selected.length, 4);
 });
 
 test('resolves resource-pack model parents and texture references', () => {
   const models = new Map([
-    ['minecraft:block/cube', { elements: [{ from: [0, 0, 0], to: [16, 16, 16] }], textures: { all: 'minecraft:block/stone' } }],
-    ['minecraft:block/child', { parent: 'minecraft:block/cube', textures: { base: 'minecraft:block/stone', all: '#base' } }],
+    [
+      'minecraft:block/cube',
+      {
+        elements: [{ from: [0, 0, 0], to: [16, 16, 16] }],
+        textures: { all: 'minecraft:block/stone' },
+      },
+    ],
+    [
+      'minecraft:block/child',
+      { parent: 'minecraft:block/cube', textures: { base: 'minecraft:block/stone', all: '#base' } },
+    ],
   ]);
 
   const model = resolveModel('minecraft:block/child', models);
@@ -407,7 +444,10 @@ test('resolves resource-pack model parents and texture references', () => {
 
 test('resolves vanilla cube parents omitted by resource packs', () => {
   const models = new Map([
-    ['minecraft:block/stone', { parent: 'minecraft:block/cube_all', textures: { all: 'minecraft:block/stone' } }],
+    [
+      'minecraft:block/stone',
+      { parent: 'minecraft:block/cube_all', textures: { all: 'minecraft:block/stone' } },
+    ],
   ]);
   const blockstates = new Map([
     ['minecraft:stone', { variants: { '': { model: 'minecraft:block/stone' } } }],
@@ -422,8 +462,12 @@ test('resolves vanilla cube parents omitted by resource packs', () => {
 test('parses blockstates and models from resource-pack paths', () => {
   const files = {
     'pack.mcmeta': new TextEncoder().encode('{"pack":{"pack_format":6}}'),
-    'assets/minecraft/blockstates/stone.json': new TextEncoder().encode('{"variants":{"":{"model":"minecraft:block/stone"}}}'),
-    'assets/minecraft/models/block/stone.json': new TextEncoder().encode('{"textures":{"all":"minecraft:block/stone"},"elements":[{"from":[0,0,0],"to":[16,16,16],"faces":{"up":{"texture":"#all"}}}]}'),
+    'assets/minecraft/blockstates/stone.json': new TextEncoder().encode(
+      '{"variants":{"":{"model":"minecraft:block/stone"}}}',
+    ),
+    'assets/minecraft/models/block/stone.json': new TextEncoder().encode(
+      '{"textures":{"all":"minecraft:block/stone"},"elements":[{"from":[0,0,0],"to":[16,16,16],"faces":{"up":{"texture":"#all"}}}]}',
+    ),
   };
   const parsed = parseResourcePackJson(files);
   const model = resolveBlockModel('minecraft:stone', parsed.blockstates, parsed.models);
@@ -446,7 +490,10 @@ test('treats only air blocks as air, not stairs', () => {
   assert.equal(isAir('minecraft:cave_air'), true);
   assert.equal(isAir('minecraft:void_air'), true);
   assert.equal(isAir(undefined), true);
-  assert.equal(isAir('minecraft:oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]'), false);
+  assert.equal(
+    isAir('minecraft:oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]'),
+    false,
+  );
   assert.equal(isOpaque('minecraft:cave_air'), false);
   assert.equal(isOpaque('minecraft:stone'), true);
 });
@@ -455,7 +502,16 @@ test('a block counts as filling its cell only when its model has a whole unrotat
   const cube = { elements: [{ from: [0, 0, 0], to: [16, 16, 16], faces: {} }] };
   const lantern = { elements: [{ from: [5, 0, 5], to: [11, 7, 11], faces: {} }] };
   const path = { elements: [{ from: [0, 0, 0], to: [16, 15, 16], faces: {} }] };
-  const tilted = { elements: [{ from: [0, 0, 0], to: [16, 16, 16], rotation: { angle: 22.5, axis: 'y', origin: [8, 8, 8] }, faces: {} }] };
+  const tilted = {
+    elements: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        rotation: { angle: 22.5, axis: 'y', origin: [8, 8, 8] },
+        faces: {},
+      },
+    ],
+  };
   assert.equal(modelsFillCell([cube]), true);
   assert.equal(modelsFillCell([lantern]), false);
   assert.equal(modelsFillCell([path]), false);
@@ -465,15 +521,18 @@ test('a block counts as filling its cell only when its model has a whole unrotat
 
 test('turns blockstate variants the way the game does: y 90 east to south, x 270 north to up, x before y', async () => {
   const { modelPoint } = await import('../src/renderer.js');
-  const near = (actual, expected) => actual.forEach((value, index) => assert.ok(Math.abs(value - expected[index]) < 1e-9, `${actual} vs ${expected}`));
+  const near = (actual, expected) =>
+    actual.forEach((value, index) =>
+      assert.ok(Math.abs(value - expected[index]) < 1e-9, `${actual} vs ${expected}`),
+    );
   // the east face's centre of a model
-  near(modelPoint([16, 8, 8], null, { y: 90 }), [0.5, 0.5, 1]);    // to the south
-  near(modelPoint([16, 8, 8], null, { y: 270 }), [0.5, 0.5, 0]);   // to the north
-  near(modelPoint([16, 8, 8], null, { y: 180 }), [0, 0.5, 0.5]);   // to the west
+  near(modelPoint([16, 8, 8], null, { y: 90 }), [0.5, 0.5, 1]); // to the south
+  near(modelPoint([16, 8, 8], null, { y: 270 }), [0.5, 0.5, 0]); // to the north
+  near(modelPoint([16, 8, 8], null, { y: 180 }), [0, 0.5, 0.5]); // to the west
   // the north face's centre (a piston's head)
-  near(modelPoint([8, 8, 0], null, { x: 270 }), [0.5, 1, 0.5]);    // facing up
-  near(modelPoint([8, 8, 0], null, { x: 90 }), [0.5, 0, 0.5]);     // facing down
-  near(modelPoint([8, 8, 0], null, { y: 90 }), [1, 0.5, 0.5]);     // facing east
+  near(modelPoint([8, 8, 0], null, { x: 270 }), [0.5, 1, 0.5]); // facing up
+  near(modelPoint([8, 8, 0], null, { x: 90 }), [0.5, 0, 0.5]); // facing down
+  near(modelPoint([8, 8, 0], null, { y: 90 }), [1, 0.5, 0.5]); // facing east
   // an upside-down stair facing north: the high step of the east-facing model, top half after x 180, then turned north
   near(modelPoint([16, 16, 8], null, { x: 180, y: 270 }), [0.5, 0, 0]);
 });

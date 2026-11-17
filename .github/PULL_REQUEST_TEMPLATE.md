@@ -5,6 +5,9 @@
 ## Verification
 
 - [ ] `npm test`
+- [ ] `npm run test:browser`
+- [ ] `npm run lint`
+- [ ] `npm run format:check`
 - [ ] `npm run build`
 - [ ] Documentation updated when behavior or supported formats changed
 - [ ] No generated files, resource packs, or copyrighted sample assets added

@@ -12,6 +12,7 @@ Schematic Viewer is a browser-based Minecraft schematic/litematic viewer built w
 - `index.html` - browser entry point
 - `src/main.js` - application wiring and file-loading controls
 - `vite.config.js` - Vite and GitHub Pages configuration
+- `ARCHITECTURE.md` - application data flow and module responsibilities
 
 ## Build and Development
 
@@ -19,6 +20,9 @@ Schematic Viewer is a browser-based Minecraft schematic/litematic viewer built w
 npm install
 npm run dev
 npm test
+npm run test:browser
+npm run lint
+npm run format:check
 npm run build
 ```
 

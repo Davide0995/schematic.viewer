@@ -8,50 +8,138 @@ import { sourceBlockIndexForFace } from './hover.js';
 // Face definitions: [dx,dy,dz], vertex offsets, uv, AO brightness
 // Vertices in CCW order from outside the face
 const FACES = [
-  { // Top (+Y), normal (0,1,0)
-    dir: [0,1,0], name: 'top', brightness: 1.0,
-    verts: [[0,1,1],[1,1,1],[1,1,0],[0,1,0]],
-    uvs:  [[0,1],[1,1],[1,0],[0,0]],
+  {
+    // Top (+Y), normal (0,1,0)
+    dir: [0, 1, 0],
+    name: 'top',
+    brightness: 1.0,
+    verts: [
+      [0, 1, 1],
+      [1, 1, 1],
+      [1, 1, 0],
+      [0, 1, 0],
+    ],
+    uvs: [
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [0, 0],
+    ],
   },
-  { // Bottom (-Y), normal (0,-1,0)
-    dir: [0,-1,0], name: 'bottom', brightness: 0.5,
-    verts: [[0,0,0],[1,0,0],[1,0,1],[0,0,1]],
-    uvs:  [[0,0],[1,0],[1,1],[0,1]],
+  {
+    // Bottom (-Y), normal (0,-1,0)
+    dir: [0, -1, 0],
+    name: 'bottom',
+    brightness: 0.5,
+    verts: [
+      [0, 0, 0],
+      [1, 0, 0],
+      [1, 0, 1],
+      [0, 0, 1],
+    ],
+    uvs: [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+    ],
   },
-  { // North (-Z)
-    dir: [0,0,-1], name: 'north', brightness: 0.8,
-    verts: [[1,0,0],[0,0,0],[0,1,0],[1,1,0]],
-    uvs:  [[0,1],[1,1],[1,0],[0,0]],
+  {
+    // North (-Z)
+    dir: [0, 0, -1],
+    name: 'north',
+    brightness: 0.8,
+    verts: [
+      [1, 0, 0],
+      [0, 0, 0],
+      [0, 1, 0],
+      [1, 1, 0],
+    ],
+    uvs: [
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [0, 0],
+    ],
   },
-  { // South (+Z)
-    dir: [0,0,1], name: 'south', brightness: 0.8,
-    verts: [[0,0,1],[1,0,1],[1,1,1],[0,1,1]],
-    uvs:  [[0,1],[1,1],[1,0],[0,0]],
+  {
+    // South (+Z)
+    dir: [0, 0, 1],
+    name: 'south',
+    brightness: 0.8,
+    verts: [
+      [0, 0, 1],
+      [1, 0, 1],
+      [1, 1, 1],
+      [0, 1, 1],
+    ],
+    uvs: [
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [0, 0],
+    ],
   },
-  { // East (+X)
-    dir: [1,0,0], name: 'east', brightness: 0.9,
-    verts: [[1,0,1],[1,0,0],[1,1,0],[1,1,1]],
-    uvs:  [[0,1],[1,1],[1,0],[0,0]],
+  {
+    // East (+X)
+    dir: [1, 0, 0],
+    name: 'east',
+    brightness: 0.9,
+    verts: [
+      [1, 0, 1],
+      [1, 0, 0],
+      [1, 1, 0],
+      [1, 1, 1],
+    ],
+    uvs: [
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [0, 0],
+    ],
   },
-  { // West (-X)
-    dir: [-1,0,0], name: 'west', brightness: 0.9,
-    verts: [[0,0,0],[0,0,1],[0,1,1],[0,1,0]],
-    uvs:  [[0,1],[1,1],[1,0],[0,0]],
+  {
+    // West (-X)
+    dir: [-1, 0, 0],
+    name: 'west',
+    brightness: 0.9,
+    verts: [
+      [0, 0, 0],
+      [0, 0, 1],
+      [0, 1, 1],
+      [0, 1, 0],
+    ],
+    uvs: [
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [0, 0],
+    ],
   },
 ];
 
 // Indices for a quad (2 triangles, CCW)
-const QUAD_INDICES = [0,1,2, 0,2,3];
+const QUAD_INDICES = [0, 1, 2, 0, 2, 3];
 const MODEL_FACES = {
-  up: FACES[0], down: FACES[1], north: FACES[2], south: FACES[3], east: FACES[4], west: FACES[5],
+  up: FACES[0],
+  down: FACES[1],
+  north: FACES[2],
+  south: FACES[3],
+  east: FACES[4],
+  west: FACES[5],
 };
 
 function rotateModelPoint(point, origin, axis, angle) {
-  const radians = angle * Math.PI / 180;
-  const sin = Math.sin(radians), cos = Math.cos(radians);
-  const x = point[0] - origin[0], y = point[1] - origin[1], z = point[2] - origin[2];
-  if (axis === 'x') return [x + origin[0], y * cos - z * sin + origin[1], y * sin + z * cos + origin[2]];
-  if (axis === 'y') return [x * cos + z * sin + origin[0], y + origin[1], -x * sin + z * cos + origin[2]];
+  const radians = (angle * Math.PI) / 180;
+  const sin = Math.sin(radians),
+    cos = Math.cos(radians);
+  const x = point[0] - origin[0],
+    y = point[1] - origin[1],
+    z = point[2] - origin[2];
+  if (axis === 'x')
+    return [x + origin[0], y * cos - z * sin + origin[1], y * sin + z * cos + origin[2]];
+  if (axis === 'y')
+    return [x * cos + z * sin + origin[0], y + origin[1], -x * sin + z * cos + origin[2]];
   return [x * cos - y * sin + origin[0], x * sin + y * cos + origin[1], z + origin[2]];
 }
 
@@ -60,29 +148,42 @@ function rotateModelPoint(point, origin, axis, angle) {
 export function modelPoint(point, elementRotation, variantRotation) {
   let result = point;
   if (elementRotation) {
-    result = rotateModelPoint(result, elementRotation.origin ?? [8, 8, 8], elementRotation.axis, elementRotation.angle ?? 0);
+    result = rotateModelPoint(
+      result,
+      elementRotation.origin ?? [8, 8, 8],
+      elementRotation.axis,
+      elementRotation.angle ?? 0,
+    );
   }
   result = rotateModelPoint(result, [8, 8, 8], 'x', -(variantRotation.x ?? 0));
   result = rotateModelPoint(result, [8, 8, 8], 'y', -(variantRotation.y ?? 0));
-  return result.map(value => value / 16);
+  return result.map((value) => value / 16);
 }
 
 function modelNormal(normal, elementRotation, variantRotation) {
   const origin = modelPoint([8, 8, 8], elementRotation, variantRotation);
-  const endpoint = modelPoint([
-    8 + normal[0], 8 + normal[1], 8 + normal[2],
-  ], elementRotation, variantRotation);
-  const length = Math.hypot(endpoint[0] - origin[0], endpoint[1] - origin[1], endpoint[2] - origin[2]) || 1;
+  const endpoint = modelPoint(
+    [8 + normal[0], 8 + normal[1], 8 + normal[2]],
+    elementRotation,
+    variantRotation,
+  );
+  const length =
+    Math.hypot(endpoint[0] - origin[0], endpoint[1] - origin[1], endpoint[2] - origin[2]) || 1;
   return endpoint.map((value, index) => (value - origin[index]) / length);
 }
 
 function modelDirection(direction, variantRotation) {
-  return modelNormal(direction, null, variantRotation).map(value => Math.round(value));
+  return modelNormal(direction, null, variantRotation).map((value) => Math.round(value));
 }
 
 function modelFaceUvs(face) {
   const [u0, v0, u1, v1] = face.uv ?? [0, 0, 16, 16];
-  let uvs = [[u0 / 16, 1 - v1 / 16], [u1 / 16, 1 - v1 / 16], [u1 / 16, 1 - v0 / 16], [u0 / 16, 1 - v0 / 16]];
+  let uvs = [
+    [u0 / 16, 1 - v1 / 16],
+    [u1 / 16, 1 - v1 / 16],
+    [u1 / 16, 1 - v0 / 16],
+    [u0 / 16, 1 - v0 / 16],
+  ];
   const turns = ((((face.rotation ?? 0) % 360) + 360) % 360) / 90;
   for (let i = 0; i < turns; i++) {
     uvs = [uvs[3], uvs[0], uvs[1], uvs[2]];
@@ -90,7 +191,9 @@ function modelFaceUvs(face) {
   return uvs;
 }
 
-function blockIdx(x, y, z, w, l) { return x + z * w + y * w * l; }
+function blockIdx(x, y, z, w, l) {
+  return x + z * w + y * w * l;
+}
 
 function getBlock(blocks, palette, x, y, z, w, h, l) {
   if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= l) return 'minecraft:air';
@@ -119,8 +222,10 @@ export class SchematicRenderer {
 
     try {
       this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
-    } catch (error) {
-      throw new Error('WebGL could not be initialized. Try a browser with hardware acceleration enabled.');
+    } catch {
+      throw new Error(
+        'WebGL could not be initialized. Try a browser with hardware acceleration enabled.',
+      );
     }
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(w, h);
@@ -141,7 +246,9 @@ export class SchematicRenderer {
       this._isDragging = true;
       this._hideBlockTooltip();
     });
-    this.controls.addEventListener('end', () => { this._isDragging = false; });
+    this.controls.addEventListener('end', () => {
+      this._isDragging = false;
+    });
 
     // Ambient + directional lighting
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
@@ -155,12 +262,13 @@ export class SchematicRenderer {
   _initHover() {
     this.tooltip = document.getElementById('block-tooltip');
     if (!this.tooltip) return;
-    this.canvas.addEventListener('pointermove', event => {
+    this.canvas.addEventListener('pointermove', (event) => {
       this._pointerPosition = { clientX: event.clientX, clientY: event.clientY };
-      if (!this._hoverFrame) this._hoverFrame = requestAnimationFrame(() => {
-        this._hoverFrame = 0;
-        this._updateBlockTooltip();
-      });
+      if (!this._hoverFrame)
+        this._hoverFrame = requestAnimationFrame(() => {
+          this._hoverFrame = 0;
+          this._updateBlockTooltip();
+        });
     });
     this.canvas.addEventListener('pointerleave', () => {
       this._pointerPosition = null;
@@ -192,7 +300,8 @@ export class SchematicRenderer {
 
     const sourceIndex = sourceBlockIndexForFace(hit.object.userData.sourceIndices, hit.faceIndex);
     const data = hit.object.userData.schematicData;
-    const blockName = data && sourceIndex !== undefined ? data.palette[data.blocks[sourceIndex]] : null;
+    const blockName =
+      data && sourceIndex !== undefined ? data.palette[data.blocks[sourceIndex]] : null;
     if (!blockName || blockName === 'minecraft:air') {
       this._hideBlockTooltip();
       return;
@@ -225,13 +334,20 @@ export class SchematicRenderer {
 
   setWireframe(on) {
     for (const m of this._meshes) {
-      if (Array.isArray(m.material)) m.material.forEach(mt => { mt.wireframe = on; });
+      if (Array.isArray(m.material))
+        m.material.forEach((mt) => {
+          mt.wireframe = on;
+        });
       else m.material.wireframe = on;
     }
   }
 
   setGrid(on, cx, cz, sz) {
-    if (this._grid) { this.scene.remove(this._grid); this._grid.geometry.dispose(); this._grid = null; }
+    if (this._grid) {
+      this.scene.remove(this._grid);
+      this._grid.geometry.dispose();
+      this._grid = null;
+    }
     if (!on) return;
     const size = Math.max(sz * 2, 64);
     const grid = new THREE.GridHelper(size, Math.floor(size), 0x444455, 0x333344);
@@ -252,7 +368,7 @@ export class SchematicRenderer {
     for (const m of this._meshes) {
       this.scene.remove(m);
       m.geometry.dispose();
-      if (Array.isArray(m.material)) m.material.forEach(mt => mt.dispose());
+      if (Array.isArray(m.material)) m.material.forEach((mt) => mt.dispose());
       else m.material.dispose();
     }
     this._meshes = [];
@@ -268,11 +384,12 @@ export class SchematicRenderer {
     for (const entity of blockEntities) {
       if (!String(entity.id).toLowerCase().includes('sign')) continue;
       const data = entity.data ?? {};
-      const lines = [1, 2, 3, 4].map(index => data[`Text${index}`] ?? data[`text${index}`] ?? '')
-        .map(value => {
+      const lines = [1, 2, 3, 4]
+        .map((index) => data[`Text${index}`] ?? data[`text${index}`] ?? '')
+        .map((value) => {
           try {
             const parsed = typeof value === 'string' ? JSON.parse(value) : value;
-            return typeof parsed === 'object' ? parsed.text ?? '' : String(parsed ?? '');
+            return typeof parsed === 'object' ? (parsed.text ?? '') : String(parsed ?? '');
           } catch {
             return String(value);
           }
@@ -297,7 +414,11 @@ export class SchematicRenderer {
 
       const texture = new THREE.CanvasTexture(labelCanvas);
       texture.colorSpace = THREE.SRGBColorSpace;
-      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+      });
       const sprite = new THREE.Sprite(material);
       sprite.position.set(entity.x + 0.5, entity.y + 1.2, entity.z + 0.5);
       sprite.scale.set(1.6, 0.8, 1);
@@ -323,10 +444,11 @@ export class SchematicRenderer {
     const groups = new Map(); // texName → group
     const blockCache = new Map();
 
-    const getBlockRenderData = blockName => {
+    const getBlockRenderData = (blockName) => {
       if (!blockCache.has(blockName)) {
-        const resourceModels = texMgr.getBlockModels?.(blockName) ?? [texMgr.getBlockModel?.(blockName)].filter(Boolean);
-        const hasModel = resourceModels.some(model => model?.elements?.length);
+        const resourceModels =
+          texMgr.getBlockModels?.(blockName) ?? [texMgr.getBlockModel?.(blockName)].filter(Boolean);
+        const hasModel = resourceModels.some((model) => model?.elements?.length);
         blockCache.set(blockName, {
           // a block's own model, when the pack has one, says whether it fills its cell; the name list is the fallback
           opaque: isOpaque(blockName) && (!hasModel || modelsFillCell(resourceModels)),
@@ -338,13 +460,20 @@ export class SchematicRenderer {
       return blockCache.get(blockName);
     };
 
-    const opaqueAt = (x, y, z) => getBlockRenderData(getBlock(blocks, palette, x, y, z, width, height, length)).opaque;
+    const opaqueAt = (x, y, z) =>
+      getBlockRenderData(getBlock(blocks, palette, x, y, z, width, height, length)).opaque;
 
     const ensureGroup = (texName, blockName) => {
       if (!groups.has(texName)) {
         groups.set(texName, {
-          texName, blockName,
-          positions: [], normals: [], uvs: [], colors: [], indices: [], sourceIndices: [],
+          texName,
+          blockName,
+          positions: [],
+          normals: [],
+          uvs: [],
+          colors: [],
+          indices: [],
+          sourceIndices: [],
           vertexCount: 0,
         });
       }
@@ -390,11 +519,13 @@ export class SchematicRenderer {
             const [dx, dy, dz] = modelDirection(cullTemplate.dir, model.rotation);
             if (opaqueAt(bx + dx, by + dy, bz + dz)) continue;
           }
-          const verts = template.verts.map(([vx, vy, vz]) => modelPoint([
-            vx ? x1 : x0,
-            vy ? y1 : y0,
-            vz ? z1 : z0,
-          ], element.rotation, model.rotation));
+          const verts = template.verts.map(([vx, vy, vz]) =>
+            modelPoint(
+              [vx ? x1 : x0, vy ? y1 : y0, vz ? z1 : z0],
+              element.rotation,
+              model.rotation,
+            ),
+          );
           const texture = face.texture.replace(/^#/, '');
           const group = ensureGroup(texture, bName);
           const base = group.vertexCount;
@@ -421,9 +552,10 @@ export class SchematicRenderer {
           const renderData = getBlockRenderData(bName);
 
           const { faceTextures, resourceModels } = renderData;
-          if (resourceModels.some(model => model?.elements?.length)) {
+          if (resourceModels.some((model) => model?.elements?.length)) {
             for (const resourceModel of resourceModels) {
-              if (resourceModel?.elements?.length) addModel(resourceModel, bName, x, y, z, blockIdx(x, y, z, width, length));
+              if (resourceModel?.elements?.length)
+                addModel(resourceModel, bName, x, y, z, blockIdx(x, y, z, width, length));
             }
             continue;
           }
@@ -435,7 +567,7 @@ export class SchematicRenderer {
               for (const quad of boxToFaces(box)) {
                 if (cull && quad.atBoundary) {
                   const [dx, dy, dz] = quad.normal;
-                  if (opaqueAt(x+dx, y+dy, z+dz)) continue;
+                  if (opaqueAt(x + dx, y + dy, z + dz)) continue;
                 }
                 const texName = faceTextures[quad.faceName] ?? faceTextures.top;
                 addQuad(texName, bName, x, y, z, quad, blockIdx(x, y, z, width, length));
@@ -443,13 +575,13 @@ export class SchematicRenderer {
             }
           } else {
             // ── Full cube ──────────────────────────────────────────
-            const faceNames = ['top','bottom','north','south','east','west'];
+            const faceNames = ['top', 'bottom', 'north', 'south', 'east', 'west'];
             for (let fi = 0; fi < FACES.length; fi++) {
               const face = FACES[fi];
               const [dx, dy, dz] = face.dir;
 
               if (cull) {
-                if (opaqueAt(x+dx, y+dy, z+dz)) continue;
+                if (opaqueAt(x + dx, y + dy, z + dz)) continue;
               }
 
               const texName = faceTextures[faceNames[fi]] ?? faceTextures.top;
@@ -473,11 +605,11 @@ export class SchematicRenderer {
 
         // Yield to keep UI responsive
         if (processed % CHUNK < width) {
-          const pct = Math.round(processed / total * 100);
+          const pct = Math.round((processed / total) * 100);
           if (pct !== lastProgress) {
             lastProgress = pct;
             if (onProgress) onProgress(pct);
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise((r) => setTimeout(r, 0));
           }
         }
       }
@@ -489,9 +621,9 @@ export class SchematicRenderer {
 
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(group.positions, 3));
-      geo.setAttribute('normal',   new THREE.Float32BufferAttribute(group.normals,   3));
-      geo.setAttribute('uv',       new THREE.Float32BufferAttribute(group.uvs,       2));
-      geo.setAttribute('color',    new THREE.Float32BufferAttribute(group.colors,    3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(group.normals, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(group.uvs, 2));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(group.colors, 3));
       geo.setIndex(group.indices);
 
       const texture = texMgr.resolve(group.texName, group.blockName);
@@ -502,7 +634,10 @@ export class SchematicRenderer {
       });
 
       // Transparency for glass, ice, water etc.
-      const isTransparent = !isOpaque(group.blockName) || group.blockName.includes('glass') || group.blockName.includes('ice');
+      const isTransparent =
+        !isOpaque(group.blockName) ||
+        group.blockName.includes('glass') ||
+        group.blockName.includes('ice');
       if (isTransparent) {
         mat.transparent = true;
         mat.opacity = group.blockName.includes('water') ? 0.75 : 0.85;
